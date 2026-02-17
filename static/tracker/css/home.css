@@ -1,0 +1,59 @@
+
+.hero-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.description {
+    font-family: 'Courier New', Courier, monospace; /* Typewriter feel */
+    color: #9b2915; /* Burnt Orange */
+    font-weight: bold;
+    margin-bottom: 30px;
+    letter-spacing: 1px;
+}
+
+/* The Box holding your image */
+.image-placeholder {
+    width: 320px;
+    height: 420px;
+    background-color: #faf9f6; /* Soft White */
+    border: 3px solid #4d2d18; /* Wood Brown */
+    
+    /* Organic 70s Shape: Rounded top-left and bottom-right */
+    border-radius: 100px 20px 100px 20px; 
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* This ensures the image doesn't "leak" outside the rounded corners */
+    overflow: hidden; 
+    
+    /* The Mustard "Pop" Shadow */
+    box-shadow: 15px 15px 0px #e9b44c; 
+    
+    transition: transform 0.3s ease;
+}
+
+.image-placeholder:hover {
+    transform: scale(1.02);
+}
+
+/* The actual PNG file */
+.hero-image {
+    width: 100%;
+    height: 100%;
+    
+    /* object-fit: cover is the secret. It zooms the image to fill 
+       the box without stretching the "dude" out of proportion. */
+    object-fit: cover; 
+    
+    display: block;
+    
+    /* A very slight vintage warm filter */
+    filter: sepia(0.1) contrast(1.1);
+}

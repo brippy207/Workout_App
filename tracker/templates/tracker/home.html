@@ -1,43 +1,32 @@
+{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Workout App</title>
-    <style>
-        body {
-            background-color: #d3d3d3; /* Gray background from your sketch */
-            font-family: sans-serif; /* Sans Serif font (Black) */
-            color: black;
-            text-align: center;
-            padding-top: 50px;
-        }
-        nav a {
-            margin: 0 15px;
-            text-decoration: underline;
-            color: black;
-            font-weight: bold;
-        }
-        .placeholder-img {
-            margin-top: 30px;
-            border: 2px dashed black;
-            display: inline-block;
-            padding: 40px;
-            background-color: #eee;
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>workout app | home</title>
+    
+    <link rel="stylesheet" href="{% static 'tracker/css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'tracker/css/home.css' %}">
 </head>
 <body>
-    <h1>Workout App</h1>
-    
-    <nav>
-        <a href="#">Workouts</a>
-        <a href="#">Nutrition</a>
-        <a href="#">Wellness</a>
-    </nav>
 
-    <p>// Description to be added later //</p>
+    <div class="hero-container">
+        <h1>workout app</h1>
+        
+        <nav>
+            <a href="{% url 'home' %}">home</a>
+            <a href="{% url 'workouts' %}">workouts</a>
+            <a href="#">nutrition</a>
+            <a href="#">wellness</a>
+        </nav>
 
-    <div class="placeholder-img">
-        workout.png (random dude flexing)
+        <p class="description">// hello world! //</p>
+
+        <div class="image-placeholder">
+            <img src="{% static 'tracker/images/dude_flexing.jpg' %}" alt="dude flexing" class="hero-image">
+        </div>
     </div>
+
 </body>
 </html>

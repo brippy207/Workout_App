@@ -1,0 +1,39 @@
+/* base.css - The shared 70s vibe */
+:root {
+    --cream: #f4eee0;
+    --mustard: #e9b44c;
+    --burnt-orange: #9b2915;
+    --wood: #4d2d18;
+    --soft-white: #faf9f6;
+}
+
+body {
+    background-color: var(--cream);
+    background-image: radial-gradient(#e5ddd0 1px, transparent 1px);
+    background-size: 24px 24px;
+    /* Mimics a knit pattern */
+    font-family: 'Segoe UI', sans-serif;
+    color: var(--wood);
+    margin: 0;
+    padding: 40px 20px;
+}
+
+h1 {
+    font-size: 3.5rem;
+    color: var(--burnt-orange);
+    text-transform: lowercase;
+    margin-bottom: 10px;
+}
+
+nav a {
+    margin: 0 15px;
+    text-decoration: none;
+    color: var(--wood);
+    font-weight: bold;
+    text-transform: lowercase;
+    transition: 0.3s;
+}
+
+nav a:hover {
+    color: var(--mustard);
+}

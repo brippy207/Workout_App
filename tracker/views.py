@@ -4,4 +4,22 @@ from django.shortcuts import render
 from django.shortcuts import render
 
 def home(request):
-    return render(request, 'tracker/home.html')
+    return render(request, 'tracker/home.html')\
+
+def workouts(request):
+    return render(request, 'tracker/workouts.html')
+
+def category_detail(request, name):
+    # Dictionary to hold your specific categories
+    data = {
+        'lifting': ['Chest', 'Back', 'Arms', 'Legs', 'Push', 'Pull', 'Upper', 'Full Body'],
+        'cardio': ['Running', 'Rowing', 'Cycling', 'Swimming'],
+        'sports': ['Basketball', 'Softball', 'Baseball', 'Pickleball'],
+        'stretching': ['Yoga', 'Upper Body', 'Lower Body', 'Full Body Mobility']
+    }
+    
+    context = {
+        'category_name': name,
+        'sub_categories': data.get(name, [])
+    }
+    return render(request, 'tracker/category_detail.html', context)

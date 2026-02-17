@@ -1,0 +1,31 @@
+/* grid_layout.css - Used by workouts.html and category_detail.html */
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+    max-width: 800px;
+    margin: 50px auto;
+}
+
+.category-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 160px;
+    background-color: var(--soft-white);
+    border: 2px solid var(--wood);
+    border-radius: 40px 10px;
+    text-decoration: none;
+    color: var(--wood);
+    font-size: 1.4rem;
+    font-weight: bold;
+    box-shadow: 8px 8px 0px var(--mustard);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.category-box:hover {
+    transform: translateY(-5px);
+    background-color: var(--mustard);
+    color: white;
+    box-shadow: 12px 12px 0px var(--burnt-orange);
+}

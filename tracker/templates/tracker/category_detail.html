@@ -1,0 +1,31 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{{ category_name|title }} | Workout App</title>
+    <link rel="stylesheet" href="{% static 'tracker/css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'tracker/css/grid_layout.css' %}">
+</head>
+
+<body>
+    <div style="max-width: 1000px; margin: 0 auto; padding: 20px;">
+        <h1>{{ category_name }}</h1>
+
+        <nav>
+            <a href="{% url 'workouts' %}">back to logs</a>
+            <a href="{% url 'home' %}">home</a>
+        </nav>
+
+        <div class="grid-container">
+            {% for item in sub_categories %}
+            <div class="category-box">
+                {{ item }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+
+</html>
