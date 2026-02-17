@@ -13,9 +13,9 @@ def category_detail(request, name):
     # Dictionary to hold your specific categories
     data = {
         'lifting': ['Chest', 'Back', 'Arms', 'Legs', 'Push', 'Pull', 'Upper', 'Full Body'],
-        'cardio': ['Running', 'Rowing', 'Cycling', 'Swimming'],
-        'sports': ['Basketball', 'Softball', 'Baseball', 'Pickleball'],
-        'stretching': ['Yoga', 'Upper Body', 'Lower Body', 'Full Body Mobility']
+        'cardio': ['Running', 'Rowing', 'Cycling', 'Swimming', 'HIIT', 'Stair Climber', 'Elliptical'],
+        'sports': ['Basketball', 'Badminton', 'Baseball', 'Pickleball', 'Tennis', 'Volleyball'],
+        'stretching': ['Yoga', 'Upper Body', 'Lower Body', 'Full Body Mobility', 'Dynamic Stretching', 'Static Stretching'],
     }
     
     context = {
