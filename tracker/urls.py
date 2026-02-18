@@ -6,4 +6,5 @@ urlpatterns = [
     path('workouts/', views.workouts, name='workouts'),
     # This <str:name> captures whatever is in the URL (e.g., /lifting/)
     path('workouts/<str:name>/', views.category_detail, name='category'),
+    path('workout/<str:workout_name>/', views.workout_setup, name='workout_setup'),
 ]

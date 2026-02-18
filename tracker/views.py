@@ -23,3 +23,20 @@ def category_detail(request, name):
         'sub_categories': data.get(name, [])
     }
     return render(request, 'tracker/category_detail.html', context)
+
+def workout_setup(request, workout_name):
+    # This list will populate your 70s dropdown
+    gym_options = [
+        "No Equipment (Bodyweight)",
+        "Home Gym / Dumbbells",
+        "General Commercial Gym",
+        "Planet Fitness",
+        "Crunch Fitness",
+        "Life Time Fitness"
+    ]
+    
+    context = {
+        'workout_name': workout_name,
+        'gym_options': gym_options
+    }
+    return render(request, 'tracker/workout_setup.html', context)
