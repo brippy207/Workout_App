@@ -1,0 +1,57 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ workout_name|title }} Setup</title>
+    <link rel="stylesheet" href="{% static 'tracker/css/base.css' %}">
+    <style>
+        .setup-container {
+            max-width: 600px;
+            margin: 100px auto;
+            text-align: center;
+            padding: 40px;
+            background-color: var(--oatmeal);
+            border: 3px solid var(--wood);
+            border-radius: 50px 10px;
+            box-shadow: 20px 20px 0px var(--mustard);
+        }
+
+        select {
+            padding: 15px;
+            font-size: 1.1rem;
+            border: 2px solid var(--wood);
+            border-radius: 10px;
+            background-color: white;
+            color: var(--wood);
+            width: 100%;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 20px;
+            font-weight: bold;
+            color: #9b2915; /* Burnt Orange */
+        }
+    </style>
+</head>
+<body>
+    <div class="setup-container">
+        <h1>{{ workout_name }} setup</h1>
+        
+        <label for="gym-select">pick your gym setup:</label>
+        
+        <select id="gym-select">
+            <option value="" disabled selected>Pick your gym setup</option>
+            {% for option in gym_options %}
+                <option value="{{ option|slugify }}">{{ option }}</option>
+            {% endfor %}
+        </select>
+
+        <nav style="margin-top: 30px;">
+            <a href="{% url 'category' 'lifting' %}">← pick a different workout</a>
+        </nav>
+    </div>
+</body>
+</html>

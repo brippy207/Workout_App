@@ -20,9 +20,9 @@
 
         <div class="grid-container">
             {% for item in sub_categories %}
-            <div class="category-box">
+            <a href="{% url 'workout_setup' item %}" class="category-box">
                 {{ item }}
-            </div>
+            </a>
             {% endfor %}
         </div>
     </div>
