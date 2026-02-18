@@ -9,6 +9,9 @@ def home(request):
 def workouts(request):
     return render(request, 'tracker/workouts.html')
 
+def nutrition(request):
+    return render(request, 'tracker/nutrition.html')
+
 def category_detail(request, name):
     # Dictionary to hold your specific categories
     data = {
