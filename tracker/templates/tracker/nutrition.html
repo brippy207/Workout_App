@@ -88,6 +88,65 @@
             border-radius: 8px;
         }
 
+        /* Container for the calculated calorie display */
+        .cal-display-70s {
+            background: var(--wood);
+            color: var(--mustard);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 25px;
+            border: 2px solid var(--burnt-orange);
+        }
+
+        .slider-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-weight: bold;
+            text-transform: lowercase;
+        }
+
+        .value-badge {
+            background: var(--mustard);
+            padding: 2px 10px;
+            border-radius: 4px;
+            color: var(--wood);
+        }
+
+        /* The Slider Track and Thumb */
+        .retro-slider {
+            -webkit-appearance: none;
+            width: 100%; /* This makes it take up the full width of its parent */
+            height: 12px;
+            background: var(--cream);
+            border: 2px solid var(--wood);
+            border-radius: 10px;
+            outline: none;
+            /* New properties to fix centering */
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        .retro-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            background: var(--burnt-orange);
+            cursor: pointer;
+            border: 2px solid var(--wood);
+            border-radius: 50%;
+        }
+
         @keyframes slideIn {
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -106,24 +165,37 @@
         <div class="container">
         <h1>fuel tracker.</h1>
 
-        <div class="settings-card">
-            <h3>set your daily goals</h3>
-            <div class="input-row">
-                <div class="input-group">
-                    <label>calories</label>
-                    <input type="number" id="goal-cal" value="2000" onchange="updateBars()">
+       <div class="settings-card">
+            <h3>adjust your daily goals</h3>
+            
+            <div class="cal-display-70s">
+                <label>Target Intake:</label>
+                <span id="goal-cal-display">740</span> kcal
+            </div>
+
+            <div class="slider-grid">
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <label>protein</label>
+                        <span class="value-badge"><span id="val-p">40</span>g</span>
+                    </div>
+                    <input type="range" id="goal-p" min="0" max="300" value="40" class="retro-slider" oninput="updateBars()">
                 </div>
-                <div class="input-group">
-                    <label>protein (g)</label>
-                    <input type="number" id="goal-p" value="150" onchange="updateBars()">
+
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <label>carbs</label>
+                        <span class="value-badge"><span id="val-c">100</span>g</span>
+                    </div>
+                    <input type="range" id="goal-c" min="0" max="500" value="100" class="retro-slider" oninput="updateBars()">
                 </div>
-                <div class="input-group">
-                    <label>carbs (g)</label>
-                    <input type="number" id="goal-c" value="200" onchange="updateBars()">
-                </div>
-                <div class="input-group">
-                    <label>fats (g)</label>
-                    <input type="number" id="goal-f" value="70" onchange="updateBars()">
+
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <label>fats</label>
+                        <span class="value-badge"><span id="val-f">20</span>g</span>
+                    </div>
+                    <input type="range" id="goal-f" min="0" max="300" value="20" class="retro-slider" oninput="updateBars()">
                 </div>
             </div>
         </div>
@@ -163,10 +235,11 @@
         <div class="settings-card">
             <h3>add food item</h3>
             <div class="input-row">
-                <input type="text" id="food-name" placeholder="food name" style="flex: 2;">
-                <input type="number" id="add-p" placeholder="p (g)" style="flex: 1;">
-                <input type="number" id="add-c" placeholder="c (g)" style="flex: 1;">
-                <input type="number" id="add-f" placeholder="f (g)" style="flex: 1;">
+                <input type="number" id="add-s" placeholder="number of servings" style="flex: 1;">
+                <input type="number" id="add-p" placeholder="p (g) (per serving)" style="flex: 1;">
+                <input type="number" id="add-c" placeholder="c (g) (per serving)" style="flex: 1;">
+                <input type="number" id="add-f" placeholder="f (g) (per serving)" style="flex: 1;">
+                <input type="text" id="food-name" placeholder="food name" style="flex: 1;">
                 <button class="btn-add" onclick="addFood()">add to log</button>
             </div>
         </div>
@@ -187,35 +260,52 @@
     let currentP = 0; let currentC = 0; let currentF = 0;
 
     function updateBars() {
-        // Get Goals
-        const goalCal = document.getElementById('goal-cal').value || 1;
-        const goalP = document.getElementById('goal-p').value || 1;
-        const goalC = document.getElementById('goal-c').value || 1;
-        const goalF = document.getElementById('goal-f').value || 1;
+        // 1. Get values from the Sliders
+        const gP = parseInt(document.getElementById('goal-p').value);
+        const gC = parseInt(document.getElementById('goal-c').value);
+        const gF = parseInt(document.getElementById('goal-f').value);
 
-        // Calculate Current Total Calories
+        // 2. Update the number text next to the sliders
+        document.getElementById('val-p').innerText = gP;
+        document.getElementById('val-c').innerText = gC;
+        document.getElementById('val-f').innerText = gF;
+
+        // 3. Calculate the total Calorie Goal
+        const totalGoalCal = (gP * 4) + (gC * 4) + (gF * 9);
+        
+        // 4. Update the Big Calorie Display
+        document.getElementById('goal-cal-display').innerText = totalGoalCal;
+
+        // 5. Calculate current calories consumed (from your global currentP, etc.)
         const currentCal = (currentP * 4) + (currentC * 4) + (currentF * 9);
 
-        // Update Text labels
-        document.getElementById('cal-text').innerText = `${currentCal} / ${goalCal} kcal`;
-        document.getElementById('p-text').innerText = `${currentP} / ${goalP}g`;
-        document.getElementById('c-text').innerText = `${currentC} / ${goalC}g`;
-        document.getElementById('f-text').innerText = `${currentF} / ${goalF}g`;
+        // 6. Update the progress bar text labels
+        document.getElementById('cal-text').innerText = `${currentCal} / ${totalGoalCal} kcal`;
+        document.getElementById('p-text').innerText = `${currentP} / ${gP}g`;
+        document.getElementById('c-text').innerText = `${currentC} / ${gC}g`;
+        document.getElementById('f-text').innerText = `${currentF} / ${gF}g`;
 
-        // Update Bar Widths
-        document.getElementById('cal-bar').style.width = Math.min((currentCal / goalCal) * 100, 100) + '%';
-        document.getElementById('p-bar').style.width = Math.min((currentP / goalP) * 100, 100) + '%';
-        document.getElementById('c-bar').style.width = Math.min((currentC / goalC) * 100, 100) + '%';
-        document.getElementById('f-bar').style.width = Math.min((currentF / goalF) * 100, 100) + '%';
+        // 7. Update Bar Widths
+        const getWidth = (curr, goal) => (goal > 0) ? Math.min((curr / goal) * 100, 100) : 0;
+
+        document.getElementById('cal-bar').style.width = getWidth(currentCal, totalGoalCal) + '%';
+        document.getElementById('p-bar').style.width = getWidth(currentP, gP) + '%';
+        document.getElementById('c-bar').style.width = getWidth(currentC, gC) + '%';
+        document.getElementById('f-bar').style.width = getWidth(currentF, gF) + '%';
     }
 
+    // Call on load to initialize values
+    window.onload = updateBars;
+
     function addFood() {
-        const name = document.getElementById('food-name').value || "unnamed item";
+        const s = parseInt(document.getElementById('add-s').value || 0);
+        const name = (document.getElementById('food-name').value + " (" + String(s) + " servings)") || "unnamed item";
         const p = parseInt(document.getElementById('add-p').value || 0);
         const c = parseInt(document.getElementById('add-c').value || 0);
         const f = parseInt(document.getElementById('add-f').value || 0);
+        
 
-        currentP += p; currentC += c; currentF += f;
+        currentP += (p*s); currentC += (p*s); currentF += (f*s);
         updateBars();
 
         const logList = document.getElementById('food-log-list');
@@ -223,7 +313,7 @@
 
         const entry = document.createElement('div');
         entry.className = 'log-entry';
-        entry.innerHTML = `<span>${name.toLowerCase()}</span><span>${p}g</span><span>${c}g</span><span>${f}g</span>`;
+        entry.innerHTML = `<span>${name.toLowerCase()}</span><span>${p*s}g</span><span>${c*s}g</span><span>${f*s}g</span>`;
         logList.prepend(entry);
 
         // Clear Inputs
@@ -231,6 +321,7 @@
         document.getElementById('add-p').value = '';
         document.getElementById('add-c').value = '';
         document.getElementById('add-f').value = '';
+        document.getElementById('add-s').value = '';
     }
     </script>
 </body>
