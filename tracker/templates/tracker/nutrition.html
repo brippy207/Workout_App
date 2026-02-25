@@ -104,7 +104,7 @@
         .slider-grid {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 10px;
         }
 
         .slider-header {
@@ -139,12 +139,12 @@
         .retro-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 24px;
-            height: 24px;
+            width: 34px;
+            height: 34px;
             background: var(--burnt-orange);
             cursor: pointer;
             border: 2px solid var(--wood);
-            border-radius: 50%;
+            border-radius: 60%;
         }
 
         @keyframes slideIn {
@@ -163,7 +163,7 @@
 
     <div class="container">
         <div class="container">
-        <h1>fuel tracker.</h1>
+        <h1>food tracker (macros)</h1>
 
        <div class="settings-card">
             <h3>adjust your daily goals</h3>
@@ -318,9 +318,9 @@
         const servings = servingsVal;
 
         // 4. Update session totals and refresh bars
-        currentP += p; 
-        currentC += c; 
-        currentF += f;
+        currentP += p*servings; 
+        currentC += c*servings; 
+        currentF += f*servings;
         updateBars();
 
         // 5. Update the Log List
