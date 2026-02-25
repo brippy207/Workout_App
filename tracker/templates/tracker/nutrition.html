@@ -298,30 +298,54 @@
     window.onload = updateBars;
 
     function addFood() {
-        const s = parseInt(document.getElementById('add-s').value || 0);
-        const name = (document.getElementById('food-name').value + " (" + String(s) + " servings)") || "unnamed item";
-        const p = parseInt(document.getElementById('add-p').value || 0);
-        const c = parseInt(document.getElementById('add-c').value || 0);
-        const f = parseInt(document.getElementById('add-f').value || 0);
-        
+        // 1. Grab all the raw values first
+        const nameVal = document.getElementById('food-name').value.trim();
+        const servingsVal = document.getElementById('add-s').value;
+        const pVal = document.getElementById('add-p').value;
+        const cVal = document.getElementById('add-c').value;
+        const fVal = document.getElementById('add-f').value;
 
-        currentP += (p*s); currentC += (p*s); currentF += (f*s);
+        // 2. The GATEKEEPER: Check if any field is empty
+        if (!nameVal || !servingsVal || !pVal || !cVal || !fVal) {
+            alert("Please fill out all fields before adding to your log.");
+            return; // This exits the function immediately
+        }
+
+        // 3. Convert inputs to numbers now that we know they exist
+        const p = parseInt(pVal);
+        const c = parseInt(cVal);
+        const f = parseInt(fVal);
+        const servings = servingsVal;
+
+        // 4. Update session totals and refresh bars
+        currentP += p; 
+        currentC += c; 
+        currentF += f;
         updateBars();
 
+        // 5. Update the Log List
         const logList = document.getElementById('food-log-list');
-        if (logList.innerText.includes("no items logged yet")) { logList.innerHTML = ''; }
+        if (logList.innerText.includes("no items logged yet")) { 
+            logList.innerHTML = ''; 
+        }
 
         const entry = document.createElement('div');
         entry.className = 'log-entry';
-        entry.innerHTML = `<span>${name.toLowerCase()}</span><span>${p*s}g</span><span>${c*s}g</span><span>${f*s}g</span>`;
+        // Using the clean string formatting we discussed
+        entry.innerHTML = `
+            <span>${nameVal.toLowerCase()} (${servings} servings)</span>
+            <span>${p}g</span>
+            <span>${c}g</span>
+            <span>${f}g</span>
+        `;
         logList.prepend(entry);
 
-        // Clear Inputs
+        // 6. Clear Inputs for the next item
         document.getElementById('food-name').value = '';
+        document.getElementById('add-s').value = '';
         document.getElementById('add-p').value = '';
         document.getElementById('add-c').value = '';
         document.getElementById('add-f').value = '';
-        document.getElementById('add-s').value = '';
     }
     </script>
 </body>
