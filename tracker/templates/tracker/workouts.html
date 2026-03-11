@@ -1,26 +1,18 @@
+{% extends "base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html>
 
-<head>
-    <title>Workout Logs</title>
-    <link rel="stylesheet" href="{% static 'tracker/css/base.css' %}">
-    <link rel="stylesheet" href="{% static 'tracker/css/grid_layout.css' %}">
-</head>
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'tracker/css/grid_layout.css' %}">
+{% endblock %}
 
-<body>
-    <h1>workout logs</h1>
-    <nav>
-        <a href="{% url 'home' %}">back to home</a>
-        <a href="{% url 'workouts' %}" style="border-bottom: 3px solid var(--burnt-orange);">workout</a>
-    </nav>
+{% block content %}
+<h1 style="text-align: center;">workouts</h1>
 
-    <div class="grid-container">
-        <a href="{% url 'category' 'lifting' %}" class="category-box">weight lifting</a>
-        <a href="{% url 'category' 'cardio' %}" class="category-box">cardio</a>
-        <a href="{% url 'category' 'stretching' %}" class="category-box">stretching</a>
-        <a href="{% url 'category' 'sports' %}" class="category-box">sports</a>
-    </div>
-</body>
 
-</html>
+<div class="grid-container">
+    <a href="{% url 'category' 'lifting' %}" class="category-box">weight lifting</a>
+    <a href="{% url 'category' 'cardio' %}" class="category-box">cardio</a>
+    <a href="{% url 'category' 'stretching' %}" class="category-box">stretching</a>
+    <a href="{% url 'category' 'sports' %}" class="category-box">sports</a>
+</div>
+{% endblock %}

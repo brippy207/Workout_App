@@ -1,34 +1,60 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
+from .forms import SignUpForm
 
-# Create your views here.
-from django.shortcuts import render
 
+def signup(request):
+    if request.method == 'POST':
+        form = SignUpForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect('/tracker/')
+    else:
+        form = SignUpForm()
+
+    return render(request, 'registration/signup.html', {'form': form})
+
+
+@login_required
 def home(request):
-    return render(request, 'tracker/home.html')\
+    return render(request, 'tracker/home.html')
 
+@login_required
+def stats(request):
+    return render(request, "tracker/stats.html")
+
+
+
+@login_required
 def workouts(request):
     return render(request, 'tracker/workouts.html')
 
+
+@login_required
 def nutrition(request):
     return render(request, 'tracker/nutrition.html')
 
+
+@login_required
 def category_detail(request, name):
-    # Dictionary to hold your specific categories
     data = {
         'lifting': ['Chest', 'Back', 'Arms', 'Legs', 'Push', 'Pull', 'Upper', 'Full Body'],
         'cardio': ['Running', 'Rowing', 'Cycling', 'Swimming', 'HIIT', 'Stair Climber', 'Elliptical'],
         'sports': ['Basketball', 'Badminton', 'Baseball', 'Pickleball', 'Tennis', 'Volleyball'],
         'stretching': ['Yoga', 'Upper Body', 'Lower Body', 'Full Body Mobility', 'Dynamic Stretching', 'Static Stretching'],
     }
-    
+
     context = {
         'category_name': name,
         'sub_categories': data.get(name, [])
     }
     return render(request, 'tracker/category_detail.html', context)
 
+
+@login_required
 def workout_setup(request, workout_name):
-    # This list will populate your 70s dropdown
     gym_options = [
         "No Equipment (Bodyweight)",
         "Home Gym / Dumbbells",
@@ -37,7 +63,7 @@ def workout_setup(request, workout_name):
         "Crunch Fitness",
         "Life Time Fitness"
     ]
-    
+
     context = {
         'workout_name': workout_name,
         'gym_options': gym_options

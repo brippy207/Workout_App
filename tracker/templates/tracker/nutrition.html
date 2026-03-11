@@ -1,352 +1,318 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nutrition | Wellness App</title>
-    {% load static %}
-    <link rel="stylesheet" href="{% static 'tracker/css/base.css' %}">
-    <link rel="stylesheet" href="{% static 'tracker/css/grid_layout.css' %}"> 
-    
-    <style>
-        .container { max-width: 800px; margin: 0 auto; }
+{% extends "base.html" %}
+{% load static %}
 
-        /* Goal & Settings Cards */
-        .settings-card {
-            background: var(--soft-white);
-            border: 2px solid var(--wood);
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 30px;
-        }
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'tracker/css/grid_layout.css' %}"> 
+<style>
+    .container { max-width: 800px; margin: 0 auto; }
 
-        .input-row { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px; }
-        .input-group { display: flex; flex-direction: column; }
+    .settings-card {
+        background: var(--soft-white);
+        border: 2px solid var(--wood);
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+    }
 
-        input {
-            border: 2px solid var(--wood);
-            padding: 8px;
-            border-radius: 6px;
-            background: var(--cream);
-            font-family: inherit;
-        }
+    .input-row { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px; }
+    .input-group { display: flex; flex-direction: column; }
 
-        /* Progress Bar Styling */
-        .progress-container { margin-bottom: 25px; }
-        .progress-label {
-            display: flex;
-            justify-content: space-between;
-            font-weight: bold;
-            text-transform: lowercase;
-            margin-bottom: 5px;
-        }
-        .progress-bg {
-            background: var(--soft-white);
-            border: 3px solid var(--wood);
-            height: 30px;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 4px 4px 0px var(--mustard);
-        }
-        .progress-fill {
-            height: 100%;
-            width: 0%; 
-            background: var(--burnt-orange);
-            transition: width 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
+    input {
+        border: 2px solid var(--wood);
+        padding: 8px;
+        border-radius: 6px;
+        background: var(--cream);
+        font-family: inherit;
+    }
 
-        /* Meal Log Table Styling */
-        .meal-log-container {
-            background: var(--soft-white);
-            border: 2px solid var(--wood);
-            border-radius: 12px;
-            margin-top: 30px;
-            overflow: hidden;
-        }
-        .log-header {
-            background: var(--wood);
-            color: var(--cream);
-            padding: 10px 20px;
-            font-weight: bold;
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1fr;
-            text-transform: lowercase;
-        }
-        .log-entry {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1fr;
-            padding: 12px 20px;
-            border-bottom: 1px dashed var(--wood);
-            animation: slideIn 0.3s ease-out;
-        }
-        .btn-add {
-            background: var(--mustard);
-            border: 2px solid var(--wood);
-            padding: 10px 20px;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 8px;
-        }
+    .progress-container { margin-bottom: 25px; }
+    .progress-label {
+        display: flex;
+        justify-content: space-between;
+        font-weight: bold;
+        text-transform: lowercase;
+        margin-bottom: 5px;
+    }
+    .progress-bg {
+        background: var(--soft-white);
+        border: 3px solid var(--wood);
+        height: 30px;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 4px 4px 0px var(--mustard);
+    }
+    .progress-fill {
+        height: 100%;
+        width: 0%;
+        background: var(--burnt-orange);
+        transition: width 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
 
-        /* Container for the calculated calorie display */
-        .cal-display-70s {
-            background: var(--wood);
-            color: var(--mustard);
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 25px;
-            border: 2px solid var(--burnt-orange);
-        }
+    .meal-log-container {
+        background: var(--soft-white);
+        border: 2px solid var(--wood);
+        border-radius: 12px;
+        margin-top: 30px;
+        overflow: hidden;
+    }
+    .log-header {
+        background: var(--wood);
+        color: var(--cream);
+        padding: 10px 20px;
+        font-weight: bold;
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr;
+        text-transform: lowercase;
+    }
+    .log-entry {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr;
+        padding: 12px 20px;
+        border-bottom: 1px dashed var(--wood);
+        animation: slideIn 0.3s ease-out;
+    }
+    .btn-add {
+        background: var(--mustard);
+        border: 2px solid var(--wood);
+        padding: 10px 20px;
+        font-weight: bold;
+        cursor: pointer;
+        border-radius: 8px;
+    }
 
-        .slider-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+    .cal-display-70s {
+        background: var(--wood);
+        color: var(--mustard);
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 25px;
+        border: 2px solid var(--burnt-orange);
+    }
 
-        .slider-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            font-weight: bold;
-            text-transform: lowercase;
-        }
+    .slider-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
 
-        .value-badge {
-            background: var(--mustard);
-            padding: 2px 10px;
-            border-radius: 4px;
-            color: var(--wood);
-        }
+    .slider-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-weight: bold;
+        text-transform: lowercase;
+    }
 
-        /* The Slider Track and Thumb */
-        .retro-slider {
-            -webkit-appearance: none;
-            width: 100%; /* This makes it take up the full width of its parent */
-            height: 12px;
-            background: var(--cream);
-            border: 2px solid var(--wood);
-            border-radius: 10px;
-            outline: none;
-            /* New properties to fix centering */
-            margin: 0;
-            box-sizing: border-box;
-        }
+    .value-badge {
+        background: var(--mustard);
+        padding: 2px 10px;
+        border-radius: 4px;
+        color: var(--wood);
+    }
 
-        .retro-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 34px;
-            height: 34px;
-            background: var(--burnt-orange);
-            cursor: pointer;
-            border: 2px solid var(--wood);
-            border-radius: 60%;
-        }
+    .retro-slider {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 12px;
+        background: var(--cream);
+        border: 2px solid var(--wood);
+        border-radius: 10px;
+        outline: none;
+        margin: 0;
+        box-sizing: border-box;
+    }
 
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
-</head>
-<body>
+    .retro-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 34px;
+        height: 34px;
+        background: var(--burnt-orange);
+        cursor: pointer;
+        border: 2px solid var(--wood);
+        border-radius: 60%;
+    }
 
-    <nav>
-        <a href="{% url 'home' %}">home</a>
-        <a href="{% url 'workouts' %}">workout</a>
-        <a href="{% url 'nutrition' %}" style="border-bottom: 3px solid var(--burnt-orange);">nutrition</a>
-    </nav>
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
 
-    <div class="container">
-        <div class="container">
-        <h1>food tracker (macros)</h1>
+{% block content %}
+<div class="container">
+    <h1>food tracker (macros)</h1>
 
-       <div class="settings-card">
-            <h3>adjust your daily goals</h3>
-            
-            <div class="cal-display-70s">
-                <label>Target Intake:</label>
-                <span id="goal-cal-display">740</span> kcal
-            </div>
+    <div class="settings-card">
+        <h3>adjust your daily goals</h3>
 
-            <div class="slider-grid">
-                <div class="slider-group">
-                    <div class="slider-header">
-                        <label>protein</label>
-                        <span class="value-badge"><span id="val-p">100</span>g</span>
-                    </div>
-                    <input type="range" id="goal-p" min="40" max="300" value="100" class="retro-slider" oninput="updateBars()">
-                </div>
-
-                <div class="slider-group">
-                    <div class="slider-header">
-                        <label>carbs</label>
-                        <span class="value-badge"><span id="val-c">300</span>g</span>
-                    </div>
-                    <input type="range" id="goal-c" min="100" max="500" value="300" class="retro-slider" oninput="updateBars()">
-                </div>
-
-                <div class="slider-group">
-                    <div class="slider-header">
-                        <label>fats</label>
-                        <span class="value-badge"><span id="val-f">70</span>g</span>
-                    </div>
-                    <input type="range" id="goal-f" min="20" max="300" value="70" class="retro-slider" oninput="updateBars()">
-                </div>
-            </div>
+        <div class="cal-display-70s">
+            <label>Target Intake:</label>
+            <span id="goal-cal-display">740</span> kcal
         </div>
 
-        <div class="meal-section">
-            <div class="progress-container">
-                <div class="progress-label">
-                    <span style="color: var(--burnt-orange); font-weight: 900; font-size: 1.2rem;">total calories</span> 
-                    <span id="cal-text">0 / 2000 kcal</span>
+        <div class="slider-grid">
+            <div class="slider-group">
+                <div class="slider-header">
+                    <label>protein</label>
+                    <span class="value-badge"><span id="val-p">100</span>g</span>
                 </div>
-                <div class="progress-bg" style="height: 40px; border-width: 4px;">
-                    <div id="cal-bar" class="progress-fill" style="background: var(--wood);"></div>
-                </div>
+                <input type="range" id="goal-p" min="40" max="300" value="100" class="retro-slider" oninput="updateBars()">
             </div>
 
-            <div class="progress-container">
-                <div class="progress-label"><span>protein</span> <span id="p-text">0 / 150g</span></div>
-                <div class="progress-bg">
-                    <div id="p-bar" class="progress-fill" style="background: var(--burnt-orange);"></div>
+            <div class="slider-group">
+                <div class="slider-header">
+                    <label>carbs</label>
+                    <span class="value-badge"><span id="val-c">300</span>g</span>
                 </div>
+                <input type="range" id="goal-c" min="100" max="500" value="300" class="retro-slider" oninput="updateBars()">
             </div>
 
-            <div class="progress-container">
-                <div class="progress-label"><span>carbs</span> <span id="c-text">0 / 200g</span></div>
-                <div class="progress-bg">
-                    <div id="c-bar" class="progress-fill" style="background: var(--mustard);"></div>
+            <div class="slider-group">
+                <div class="slider-header">
+                    <label>fats</label>
+                    <span class="value-badge"><span id="val-f">70</span>g</span>
                 </div>
-            </div>
-
-            <div class="progress-container">
-                <div class="progress-label"><span>fats</span> <span id="f-text">0 / 70g</span></div>
-                <div class="progress-bg">
-                    <div id="f-bar" class="progress-fill" style="background: #8b5e3c;"></div> </div>
-            </div>
-        </div>
-
-        <div class="settings-card">
-            <h3>add food item</h3>
-            <div class="input-row">
-                <input type="number" id="add-s" placeholder="number of servings" style="flex: 1;">
-                <input type="number" id="add-p" placeholder="p (g) (per serving)" style="flex: 1;">
-                <input type="number" id="add-c" placeholder="c (g) (per serving)" style="flex: 1;">
-                <input type="number" id="add-f" placeholder="f (g) (per serving)" style="flex: 1;">
-                <input type="text" id="food-name" placeholder="food name" style="flex: 1;">
-                <button class="btn-add" onclick="addFood()">add to log</button>
-            </div>
-        </div>
-
-        <div class="meal-log-container">
-            <div class="log-header">
-                <span>food item</span><span>p</span><span>c</span><span>f</span>
-            </div>
-            <div id="food-log-list">
-                <div class="log-entry" style="color: gray; font-style: italic;">
-                    <span>no items logged yet...</span>
-                </div>
+                <input type="range" id="goal-f" min="20" max="300" value="70" class="retro-slider" oninput="updateBars()">
             </div>
         </div>
     </div>
 
-    <script>
-    let currentP = 0; let currentC = 0; let currentF = 0;
+    <div class="meal-section">
+        <div class="progress-container">
+            <div class="progress-label">
+                <span style="color: var(--burnt-orange); font-weight: 900; font-size: 1.2rem;">total calories</span>
+                <span id="cal-text">0 / 2000 kcal</span>
+            </div>
+            <div class="progress-bg" style="height: 40px; border-width: 4px;">
+                <div id="cal-bar" class="progress-fill" style="background: var(--wood);"></div>
+            </div>
+        </div>
 
-    function updateBars() {
-        // 1. Get values from the Sliders
-        const gP = parseInt(document.getElementById('goal-p').value);
-        const gC = parseInt(document.getElementById('goal-c').value);
-        const gF = parseInt(document.getElementById('goal-f').value);
+        <div class="progress-container">
+            <div class="progress-label"><span>protein</span> <span id="p-text">0 / 150g</span></div>
+            <div class="progress-bg">
+                <div id="p-bar" class="progress-fill" style="background: var(--burnt-orange);"></div>
+            </div>
+        </div>
 
-        // 2. Update the number text next to the sliders
-        document.getElementById('val-p').innerText = gP;
-        document.getElementById('val-c').innerText = gC;
-        document.getElementById('val-f').innerText = gF;
+        <div class="progress-container">
+            <div class="progress-label"><span>carbs</span> <span id="c-text">0 / 200g</span></div>
+            <div class="progress-bg">
+                <div id="c-bar" class="progress-fill" style="background: var(--mustard);"></div>
+            </div>
+        </div>
 
-        // 3. Calculate the total Calorie Goal
-        const totalGoalCal = (gP * 4) + (gC * 4) + (gF * 9);
-        
-        // 4. Update the Big Calorie Display
-        document.getElementById('goal-cal-display').innerText = totalGoalCal;
+        <div class="progress-container">
+            <div class="progress-label"><span>fats</span> <span id="f-text">0 / 70g</span></div>
+            <div class="progress-bg">
+                <div id="f-bar" class="progress-fill" style="background: #8b5e3c;"></div>
+            </div>
+        </div>
+    </div>
 
-        // 5. Calculate current calories consumed (from your global currentP, etc.)
-        const currentCal = (currentP * 4) + (currentC * 4) + (currentF * 9);
+    <div class="settings-card">
+        <h3>add food item</h3>
+        <div class="input-row">
+            <input type="number" id="add-s" placeholder="number of servings" style="flex: 1;">
+            <input type="number" id="add-p" placeholder="p (g) (per serving)" style="flex: 1;">
+            <input type="number" id="add-c" placeholder="c (g) (per serving)" style="flex: 1;">
+            <input type="number" id="add-f" placeholder="f (g) (per serving)" style="flex: 1;">
+            <input type="text" id="food-name" placeholder="food name" style="flex: 1;">
+            <button class="btn-add" onclick="addFood()">add to log</button>
+        </div>
+    </div>
 
-        // 6. Update the progress bar text labels
-        document.getElementById('cal-text').innerText = `${currentCal} / ${totalGoalCal} kcal`;
-        document.getElementById('p-text').innerText = `${currentP} / ${gP}g`;
-        document.getElementById('c-text').innerText = `${currentC} / ${gC}g`;
-        document.getElementById('f-text').innerText = `${currentF} / ${gF}g`;
+    <div class="meal-log-container">
+        <div class="log-header">
+            <span>food item</span><span>p</span><span>c</span><span>f</span>
+        </div>
+        <div id="food-log-list">
+            <div class="log-entry" style="color: gray; font-style: italic;">
+                <span>no items logged yet...</span>
+            </div>
+        </div>
+    </div>
+</div>
 
-        // 7. Update Bar Widths
-        const getWidth = (curr, goal) => (goal > 0) ? Math.min((curr / goal) * 100, 100) : 0;
+<script>
+let currentP = 0; let currentC = 0; let currentF = 0;
 
-        document.getElementById('cal-bar').style.width = getWidth(currentCal, totalGoalCal) + '%';
-        document.getElementById('p-bar').style.width = getWidth(currentP, gP) + '%';
-        document.getElementById('c-bar').style.width = getWidth(currentC, gC) + '%';
-        document.getElementById('f-bar').style.width = getWidth(currentF, gF) + '%';
+function updateBars() {
+    const gP = parseInt(document.getElementById('goal-p').value);
+    const gC = parseInt(document.getElementById('goal-c').value);
+    const gF = parseInt(document.getElementById('goal-f').value);
+
+    document.getElementById('val-p').innerText = gP;
+    document.getElementById('val-c').innerText = gC;
+    document.getElementById('val-f').innerText = gF;
+
+    const totalGoalCal = (gP * 4) + (gC * 4) + (gF * 9);
+    document.getElementById('goal-cal-display').innerText = totalGoalCal;
+
+    const currentCal = (currentP * 4) + (currentC * 4) + (currentF * 9);
+
+    document.getElementById('cal-text').innerText = `${currentCal} / ${totalGoalCal} kcal`;
+    document.getElementById('p-text').innerText = `${currentP} / ${gP}g`;
+    document.getElementById('c-text').innerText = `${currentC} / ${gC}g`;
+    document.getElementById('f-text').innerText = `${currentF} / ${gF}g`;
+
+    const getWidth = (curr, goal) => (goal > 0) ? Math.min((curr / goal) * 100, 100) : 0;
+
+    document.getElementById('cal-bar').style.width = getWidth(currentCal, totalGoalCal) + '%';
+    document.getElementById('p-bar').style.width = getWidth(currentP, gP) + '%';
+    document.getElementById('c-bar').style.width = getWidth(currentC, gC) + '%';
+    document.getElementById('f-bar').style.width = getWidth(currentF, gF) + '%';
+}
+
+window.onload = updateBars;
+
+function addFood() {
+    const nameVal = document.getElementById('food-name').value.trim();
+    const servingsVal = document.getElementById('add-s').value;
+    const pVal = document.getElementById('add-p').value;
+    const cVal = document.getElementById('add-c').value;
+    const fVal = document.getElementById('add-f').value;
+
+    if (!nameVal || !servingsVal || !pVal || !cVal || !fVal) {
+        alert("Please fill out all fields before adding to your log.");
+        return;
     }
 
-    // Call on load to initialize values
-    window.onload = updateBars;
+    const p = parseInt(pVal);
+    const c = parseInt(cVal);
+    const f = parseInt(fVal);
+    const servings = parseInt(servingsVal);
 
-    function addFood() {
-        // 1. Grab all the raw values first
-        const nameVal = document.getElementById('food-name').value.trim();
-        const servingsVal = document.getElementById('add-s').value;
-        const pVal = document.getElementById('add-p').value;
-        const cVal = document.getElementById('add-c').value;
-        const fVal = document.getElementById('add-f').value;
+    currentP += p * servings;
+    currentC += c * servings;
+    currentF += f * servings;
+    updateBars();
 
-        // 2. The GATEKEEPER: Check if any field is empty
-        if (!nameVal || !servingsVal || !pVal || !cVal || !fVal) {
-            alert("Please fill out all fields before adding to your log.");
-            return; // This exits the function immediately
-        }
-
-        // 3. Convert inputs to numbers now that we know they exist
-        const p = parseInt(pVal);
-        const c = parseInt(cVal);
-        const f = parseInt(fVal);
-        const servings = servingsVal;
-
-        // 4. Update session totals and refresh bars
-        currentP += p*servings; 
-        currentC += c*servings; 
-        currentF += f*servings;
-        updateBars();
-
-        // 5. Update the Log List
-        const logList = document.getElementById('food-log-list');
-        if (logList.innerText.includes("no items logged yet")) { 
-            logList.innerHTML = ''; 
-        }
-
-        const entry = document.createElement('div');
-        entry.className = 'log-entry';
-        // Using the clean string formatting we discussed
-        entry.innerHTML = `
-            <span>${nameVal.toLowerCase()} (${servings} servings)</span>
-            <span>${p}g</span>
-            <span>${c}g</span>
-            <span>${f}g</span>
-        `;
-        logList.prepend(entry);
-
-        // 6. Clear Inputs for the next item
-        document.getElementById('food-name').value = '';
-        document.getElementById('add-s').value = '';
-        document.getElementById('add-p').value = '';
-        document.getElementById('add-c').value = '';
-        document.getElementById('add-f').value = '';
+    const logList = document.getElementById('food-log-list');
+    if (logList.innerText.includes("no items logged yet")) {
+        logList.innerHTML = '';
     }
-    </script>
-</body>
-</html>
+
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    entry.innerHTML = `
+        <span>${nameVal.toLowerCase()} (${servings} servings)</span>
+        <span>${p}g</span>
+        <span>${c}g</span>
+        <span>${f}g</span>
+    `;
+    logList.prepend(entry);
+
+    document.getElementById('food-name').value = '';
+    document.getElementById('add-s').value = '';
+    document.getElementById('add-p').value = '';
+    document.getElementById('add-c').value = '';
+    document.getElementById('add-f').value = '';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Your Stats</h2>
+
+<p>Height: {{ request.user.profile.height }}</p>
+<p>Weight: {{ request.user.profile.weight }} lbs</p>
+<p>Goal Weight: {{ request.user.profile.goal_weight }} lbs</p>
+<p>Timeline: {{ request.user.profile.timeline }}</p>
+
+{% endblock %}

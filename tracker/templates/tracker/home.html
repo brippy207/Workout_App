@@ -1,31 +1,13 @@
+{% extends "base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>workout app | home</title>
-    
-    <link rel="stylesheet" href="{% static 'tracker/css/base.css' %}">
+
+{% block extra_css %}
     <link rel="stylesheet" href="{% static 'tracker/css/home.css' %}">
-</head>
-<body>
+{% endblock %}
 
-    <div class="hero-container">
-        <h1>workout app</h1>
-        
-        <nav>
-            <a href="{% url 'workouts' %}">workouts</a>
-            <a href="{% url 'nutrition' %}">nutrition</a>
-            <a href="#">stats</a>
-        </nav>
-
-        <p class="description">// hello world!. //</p>
-
-        <div class="image-placeholder">
-            <img src="{% static 'tracker/images/dude_flexing.jpg' %}" alt="dude flexing" class="hero-image">
-        </div>
+{% block content %}
+    <p class="description">// hello world! //</p>
+    <div class="image-placeholder">
+        <img src="{% static 'tracker/images/dude_flexing.jpg' %}" alt="dude flexing" class="hero-image">
     </div>
-
-</body>
-</html>
+{% endblock %}

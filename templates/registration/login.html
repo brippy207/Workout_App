@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="setup-container" style="max-width: 400px; margin: 40px auto; text-align: left;">
+    <h2 style="text-align: center;">login</h2>
+    <form method="post" style="display: flex; flex-direction: column; gap: 15px;">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="category-box" style="height: 50px; width: 100%; cursor: pointer;">
+            Enter
+        </button>
+    </form>
+    <p style="text-align: center; margin-top: 20px;">
+        Need an account? <a href="{% url 'signup' %}" style="color: var(--burnt-orange);">Sign up</a>
+    </p>
+</div>
+{% endblock %}

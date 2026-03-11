@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="setup-container" style="max-width: 450px; margin: auto; text-align: left;">
+    <h2>create account</h2>
+
+    <form method="post">
+        {% csrf_token %}
+
+        {% for field in form %}
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; font-weight: bold;">{{ field.label }}</label>
+            {{ field }}
+
+            {# Show specific errors for this field (e.g. password too short) #}
+            {% if field.errors %}
+            {% for error in field.errors %}
+            <p style="color: #9b2915; font-size: 0.85rem; margin-top: 5px;">{{ error }}</p>
+            {% endfor %}
+            {% endif %}
+
+            {# Show help text (e.g. "Your password must contain...") #}
+            {% if field.help_text %}
+            <p style="font-size: 0.75rem; color: #666; margin-top: 5px;">{{ field.help_text|safe }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        <button type="submit" class="category-box" style="width:100%; height:50px; cursor: pointer;">
+            Start My Journey
+        </button>
+    </form>
+</div>
+{% endblock %}
