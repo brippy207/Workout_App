@@ -3,7 +3,7 @@
 A secure, full-stack web application designed for comprehensive fitness and nutrition tracking. This project was developed as part of the **Software Engineering** curriculum at the **College of the Holy Cross**.
 
 ## 👥 Project Team
-Developed by two undergraduate computer science students at the College of the Holy Cross.
+Developed by Brian Rippy and Brenden Gruburg, two undergraduate computer science students at the College of the Holy Cross.
 
 ---
 
