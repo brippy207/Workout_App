@@ -1,12 +1,164 @@
 {% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .stats-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    /* --- Image --- */
+    .image-placeholder {
+        width: 320px;
+        height: 420px;
+        background-color: var(--soft-white);
+        border: 3px solid var(--wood);
+        border-radius: 100px 20px 100px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        box-shadow: 15px 15px 0px var(--mustard);
+        transition: transform 0.3s ease;
+        margin-bottom: 50px;
+    }
+
+    .image-placeholder:hover {
+        transform: scale(1.02);
+    }
+
+    .hero-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        filter: sepia(0.1) contrast(1.1);
+    }
+
+    /* --- Bars --- */
+    .bars-section {
+        width: 100%;
+    }
+
+    .progress-container {
+        margin-bottom: 30px;
+    }
+
+    .progress-label {
+        font-weight: bold;
+        text-transform: lowercase;
+        margin-bottom: 5px;
+    }
+
+    .weight-bg {
+        background: var(--soft-white);
+        border: 3px solid var(--wood);
+        height: 30px;
+        border-radius: 15px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 4px 4px 0px var(--mustard);
+    }
+
+    .weight-red {
+        height: 100%;
+        background: var(--burnt-orange);
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+    .weight-mustard {
+        height: 100%;
+        background: var(--mustard);
+        position: absolute;
+        top: 0;
+    }
+
+    .weight-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 6px;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.8rem;
+        font-weight: bold;
+        text-transform: lowercase;
+    }
+
+    .label-current {
+        color: var(--burnt-orange);
+    }
+
+    .label-goal {
+        color: var(--wood);
+        background: var(--mustard);
+        padding: 1px 7px;
+        border-radius: 4px;
+    }
+
+    /* --- Static text blurbs --- */
+    .stats-blurb {
+        font-family: 'Courier New', Courier, monospace;
+        color: var(--burnt-orange);
+        font-weight: bold;
+        font-size: 1.1rem;
+        text-transform: lowercase;
+        letter-spacing: 1px;
+        margin: 4px 0;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
+<div class="stats-container">
 
-<h2>Your Stats</h2>
+    <h2>your stats</h2>
 
-<p>Height: {{ request.user.profile.height }}</p>
-<p>Weight: {{ request.user.profile.weight }} lbs</p>
-<p>Goal Weight: {{ request.user.profile.goal_weight }} lbs</p>
-<p>Timeline: {{ request.user.profile.timeline }}</p>
+    <!-- Image -->
+    <div class="image-placeholder">
+        <img class="hero-image" src="{% static 'tracker/images/dude_flexing.jpg' %}" alt="flexing dude">
+    </div>
 
+    <div class="bars-section">
+
+        <!-- Weight Bar -->
+        <div class="progress-container">
+            <div class="progress-label">weight</div>
+
+            {% if gaining %}
+                <!-- GAIN: red = current (lower), mustard = current to goal -->
+                <div class="weight-bg">
+                    <div class="weight-red" style="width: {{ lower_pct }}%;"></div>
+                    <div class="weight-mustard" style="left: {{ lower_pct }}%; width: {{ delta_pct }}%;"></div>
+                </div>
+                <div class="weight-labels">
+                    <span class="label-current">current: {{ weight }} lbs</span>
+                    <span class="label-goal">goal: {{ goal }} lbs</span>
+                </div>
+
+            {% else %}
+                <!-- LOSS: red = goal (lower), mustard = goal to current -->
+                <div class="weight-bg">
+                    <div class="weight-red" style="width: {{ lower_pct }}%;"></div>
+                    <div class="weight-mustard" style="left: {{ lower_pct }}%; width: {{ delta_pct }}%;"></div>
+                </div>
+                <div class="weight-labels">
+                    <span class="label-current">current: {{ weight }} lbs</span>
+                    <span class="label-goal">goal: {{ goal }} lbs</span>
+                </div>
+
+            {% endif %}
+        </div>
+
+        <!-- Static text blurbs -->
+        <p class="stats-blurb">📏 height: {{ request.user.profile.height }} in</p>
+        <p class="stats-blurb">⏱ time remaining: {{ request.user.profile.timeline }}</p>
+
+    </div>
+</div>
 {% endblock %}

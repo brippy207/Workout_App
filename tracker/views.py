@@ -23,8 +23,29 @@ def home(request):
 
 @login_required
 def stats(request):
-    return render(request, "tracker/stats.html")
+    profile = request.user.profile
+    weight = profile.weight
+    goal = profile.goal_weight
 
+    # Scale the bar so the larger of the two values sits at 90% width,
+    # leaving room for the smaller segment to be visible
+    bar_max = max(weight, goal) / 0.9
+
+    lower_pct = round((min(weight, goal) / bar_max) * 100, 2)
+    upper_pct = round((max(weight, goal) / bar_max) * 100, 2)
+    delta_pct = round(upper_pct - lower_pct, 2)
+
+    gaining = goal > weight
+
+    context = {
+        'lower_pct': lower_pct,
+        'upper_pct': upper_pct,
+        'delta_pct': delta_pct,
+        'gaining': gaining,
+        'weight': weight,
+        'goal': goal,
+    }
+    return render(request, "tracker/stats.html", context)
 
 
 @login_required
