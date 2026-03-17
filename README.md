@@ -67,7 +67,3 @@ The project follows the **Model-View-Template (MVT)** pattern:
 * **Institution:** College of the Holy Cross
 * **Department:** Computer Science
 * **Course:** Software Engineering (CSCI 399)
-
----
-
-**Would you like me to create a "Technical Challenges" section for the README that explains how you solved the naming mismatch between the signup form and the database?**
