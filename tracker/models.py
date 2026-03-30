@@ -13,3 +13,22 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
+    
+
+class WorkoutLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    activity_name = models.CharField(max_length=100) # "Run", "Swim", etc.
+    distance = models.FloatField(null=True, blank=True) # Miles
+    duration = models.IntegerField(null=True, blank=True) # Minutes
+    date = models.DateField(auto_now_add=True)
+    # This stores the Google Calendar-style colors
+    color = models.CharField(max_length=20, default="#e67e22") 
+
+class WeightEntry(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    weight = models.IntegerField()
+    date = models.DateField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['date']
+

@@ -1,164 +1,155 @@
 {% extends "base.html" %}
-{% load static %}
-
-{% block extra_css %}
-<style>
-    .stats-container {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-
-    /* --- Image --- */
-    .image-placeholder {
-        width: 320px;
-        height: 420px;
-        background-color: var(--soft-white);
-        border: 3px solid var(--wood);
-        border-radius: 100px 20px 100px 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        box-shadow: 15px 15px 0px var(--mustard);
-        transition: transform 0.3s ease;
-        margin-bottom: 50px;
-    }
-
-    .image-placeholder:hover {
-        transform: scale(1.02);
-    }
-
-    .hero-image {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-        filter: sepia(0.1) contrast(1.1);
-    }
-
-    /* --- Bars --- */
-    .bars-section {
-        width: 100%;
-    }
-
-    .progress-container {
-        margin-bottom: 30px;
-    }
-
-    .progress-label {
-        font-weight: bold;
-        text-transform: lowercase;
-        margin-bottom: 5px;
-    }
-
-    .weight-bg {
-        background: var(--soft-white);
-        border: 3px solid var(--wood);
-        height: 30px;
-        border-radius: 15px;
-        position: relative;
-        overflow: hidden;
-        box-shadow: 4px 4px 0px var(--mustard);
-    }
-
-    .weight-red {
-        height: 100%;
-        background: var(--burnt-orange);
-        position: absolute;
-        top: 0;
-        left: 0;
-    }
-
-    .weight-mustard {
-        height: 100%;
-        background: var(--mustard);
-        position: absolute;
-        top: 0;
-    }
-
-    .weight-labels {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 6px;
-        font-family: 'Courier New', Courier, monospace;
-        font-size: 0.8rem;
-        font-weight: bold;
-        text-transform: lowercase;
-    }
-
-    .label-current {
-        color: var(--burnt-orange);
-    }
-
-    .label-goal {
-        color: var(--wood);
-        background: var(--mustard);
-        padding: 1px 7px;
-        border-radius: 4px;
-    }
-
-    /* --- Static text blurbs --- */
-    .stats-blurb {
-        font-family: 'Courier New', Courier, monospace;
-        color: var(--burnt-orange);
-        font-weight: bold;
-        font-size: 1.1rem;
-        text-transform: lowercase;
-        letter-spacing: 1px;
-        margin: 4px 0;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="stats-container">
 
-    <h2>your stats</h2>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{{ events_json|json_script:"stats-events-data" }}
+{{ labels_json|json_script:"stats-labels-data" }}
+{{ values_json|json_script:"stats-values-data" }}
 
-    <!-- Image -->
-    <div class="image-placeholder">
-        <img class="hero-image" src="{% static 'tracker/images/dude_flexing.jpg' %}" alt="flexing dude">
-    </div>
+<div class="stats-container" style="max-width: 1000px; margin: auto; padding: 20px;">
 
-    <div class="bars-section">
+    <h2 style="text-align: center; margin-bottom: 20px;">Your Stats</h2>
 
-        <!-- Weight Bar -->
-        <div class="progress-container">
-            <div class="progress-label">weight</div>
+    <div class="profile-summary"
+         style="background: rgba(255,255,255,0.08);
+                padding: 15px;
+                border-radius: 10px;
+                margin-bottom: 20px;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 15px;
+                justify-content: space-around;
+                border: 1px solid var(--burnt-orange);">
 
-            {% if gaining %}
-                <!-- GAIN: red = current (lower), mustard = current to goal -->
-                <div class="weight-bg">
-                    <div class="weight-red" style="width: {{ lower_pct }}%;"></div>
-                    <div class="weight-mustard" style="left: {{ lower_pct }}%; width: {{ delta_pct }}%;"></div>
-                </div>
-                <div class="weight-labels">
-                    <span class="label-current">current: {{ weight }} lbs</span>
-                    <span class="label-goal">goal: {{ goal }} lbs</span>
-                </div>
-
+        <div><strong>User:</strong> {{ user.first_name|default:user.username }}</div>
+        <div><strong>Height:</strong> {{ profile.height|default:"Not set" }}</div>
+        <div>
+            <strong>Current Weight:</strong>
+            {% if current_weight %}
+                {{ current_weight }} lbs
             {% else %}
-                <!-- LOSS: red = goal (lower), mustard = goal to current -->
-                <div class="weight-bg">
-                    <div class="weight-red" style="width: {{ lower_pct }}%;"></div>
-                    <div class="weight-mustard" style="left: {{ lower_pct }}%; width: {{ delta_pct }}%;"></div>
-                </div>
-                <div class="weight-labels">
-                    <span class="label-current">current: {{ weight }} lbs</span>
-                    <span class="label-goal">goal: {{ goal }} lbs</span>
-                </div>
-
+                Not set
             {% endif %}
         </div>
-
-        <!-- Static text blurbs -->
-        <p class="stats-blurb">📏 height: {{ request.user.profile.height }} in</p>
-        <p class="stats-blurb">⏱ time remaining: {{ request.user.profile.timeline }}</p>
-
+        <div>
+            <strong>Goal:</strong>
+            {% if profile.goal_weight %}
+                {{ profile.goal_weight }} lbs
+            {% else %}
+                Not set
+            {% endif %}
+        </div>
     </div>
+
+    <div class="stats-tabs"
+         style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap;">
+        <button id="calendar-tab"
+                onclick="openTab('calendar-view', this)"
+                class="category-box"
+                style="padding: 10px 30px; cursor: pointer;">
+            Calendar
+        </button>
+        <button id="graph-tab"
+                onclick="openTab('graph-view', this)"
+                class="category-box"
+                style="padding: 10px 30px; cursor: pointer;">
+            Weight Progress
+        </button>
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid var(--burnt-orange); margin-bottom: 20px;">
+
+    <div id="calendar-view" class="tab-content">
+        <h3 style="text-align: center; margin-bottom: 15px;">Activity Log</h3>
+        <div id="calendar"
+             style="background: white; padding: 20px; border-radius: 10px; color: black; min-height: 500px;">
+        </div>
+    </div>
+
+    <div id="graph-view" class="tab-content" style="display: none;">
+        <h3 style="text-align: center; margin-bottom: 15px;">Weight Over Time</h3>
+        <div style="background: white; padding: 20px; border-radius: 10px;">
+            <canvas id="weightChart" style="width: 100%; height: 400px;"></canvas>
+        </div>
+    </div>
+
 </div>
+
+<script>
+function openTab(tabId, buttonEl) {
+    const contents = document.getElementsByClassName("tab-content");
+    for (let i = 0; i < contents.length; i++) {
+        contents[i].style.display = "none";
+    }
+
+    document.getElementById(tabId).style.display = "block";
+
+    const buttons = document.querySelectorAll(".stats-tabs button");
+    buttons.forEach(btn => {
+        btn.style.opacity = "0.7";
+        btn.style.border = "";
+    });
+
+    if (buttonEl) {
+        buttonEl.style.opacity = "1";
+        buttonEl.style.border = "1px solid var(--burnt-orange)";
+    }
+
+    window.dispatchEvent(new Event('resize'));
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const eventsData = JSON.parse(document.getElementById('stats-events-data').textContent);
+    const labelsData = JSON.parse(document.getElementById('stats-labels-data').textContent);
+    const valuesData = JSON.parse(document.getElementById('stats-values-data').textContent);
+
+    const calendarTab = document.getElementById('calendar-tab');
+    openTab('calendar-view', calendarTab);
+
+    const calendarEl = document.getElementById('calendar');
+    if (calendarEl) {
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            events: eventsData,
+            eventDisplay: 'block',
+            height: 'auto'
+        });
+        calendar.render();
+    }
+
+    const chartCanvas = document.getElementById('weightChart');
+    if (chartCanvas) {
+        new Chart(chartCanvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labelsData,
+                datasets: [{
+                    label: 'Weight (lbs)',
+                    data: valuesData,
+                    borderColor: '#e67e22',
+                    backgroundColor: 'rgba(230, 126, 34, 0.2)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+
 {% endblock %}

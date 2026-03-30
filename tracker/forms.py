@@ -5,8 +5,6 @@ from .models import Profile
 
 class SignUpForm(UserCreationForm):
     first_name = forms.CharField(label="Name", required=True)
-    
-    # Input fields for the signup screen
     height_ft = forms.IntegerField(label="Height (ft)", min_value=4, max_value=7)
     height_in = forms.IntegerField(label="Height (in)", min_value=0, max_value=11)
     weight_lbs = forms.IntegerField(label="Current Weight (lbs)")
@@ -25,20 +23,16 @@ class SignUpForm(UserCreationForm):
         fields = UserCreationForm.Meta.fields + ('first_name',)
 
     def save(self, commit=True):
-        # 1. Save the base User (this handles the password hashing)
         user = super().save(commit=False)
         user.first_name = self.cleaned_data["first_name"]
         
         if commit:
             user.save()
             
-            # 2. Combine the ft/in inputs into the string the model expects
             h_ft = self.cleaned_data['height_ft']
             h_in = self.cleaned_data['height_in']
             height_string = f"{h_ft}'{h_in}\""
             
-            # 3. Create the Profile and MAP the names correctly
-            # Form field 'weight_lbs' -> Model field 'weight'
             Profile.objects.create(
                 user=user,
                 height=height_string,
