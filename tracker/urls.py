@@ -10,8 +10,5 @@ urlpatterns = [
     path('workout/<str:workout_name>/', views.workout_setup, name='workout_setup'),
     path('signup/', views.signup, name='signup'),
     path('log-workout/', views.log_workout, name='log_workout'),
+    path('log-weight/', views.log_weight, name='log_weight'),
 ]
-
-
-
-

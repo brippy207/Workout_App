@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -20,14 +21,14 @@ class WorkoutLog(models.Model):
     activity_name = models.CharField(max_length=100) # "Run", "Swim", etc.
     distance = models.FloatField(null=True, blank=True) # Miles
     duration = models.IntegerField(null=True, blank=True) # Minutes
-    date = models.DateField(auto_now_add=True)
+    date = models.DateField(default=timezone.localdate)
     # This stores the Google Calendar-style colors
     color = models.CharField(max_length=20, default="#e67e22") 
 
 class WeightEntry(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     weight = models.IntegerField()
-    date = models.DateField(auto_now_add=True)
+    date = models.DateField(default=timezone.localdate)
 
     class Meta:
         ordering = ['date']

@@ -3,103 +3,256 @@
 
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 {{ events_json|json_script:"stats-events-data" }}
 {{ labels_json|json_script:"stats-labels-data" }}
 {{ values_json|json_script:"stats-values-data" }}
 
-<div class="stats-container" style="max-width: 1000px; margin: auto; padding: 20px;">
+<style>
+  .stats-shell {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px;
+  }
 
-    <h2 style="text-align: center; margin-bottom: 20px;">Your Stats</h2>
+  .retro-panel {
+    background: rgba(255, 255, 255, 0.18);
+    border: 2px solid rgba(155, 41, 21, 0.35);
+    border-radius: 22px;
+    box-shadow: 10px 10px 0 var(--mustard);
+    padding: 18px;
+  }
 
-    <div class="profile-summary"
-         style="background: rgba(255,255,255,0.08);
-                padding: 15px;
-                border-radius: 10px;
-                margin-bottom: 20px;
-                display: flex;
-                flex-wrap: wrap;
-                gap: 15px;
-                justify-content: space-around;
-                border: 1px solid var(--burnt-orange);">
+  .profile-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 22px;
+  }
 
-        <div><strong>User:</strong> {{ user.first_name|default:user.username }}</div>
-        <div><strong>Height:</strong> {{ profile.height|default:"Not set" }}</div>
-        <div>
-            <strong>Current Weight:</strong>
-            {% if current_weight %}
-                {{ current_weight }} lbs
-            {% else %}
-                Not set
-            {% endif %}
-        </div>
-        <div>
-            <strong>Goal:</strong>
-            {% if profile.goal_weight %}
-                {{ profile.goal_weight }} lbs
-            {% else %}
-                Not set
-            {% endif %}
-        </div>
+  .profile-item {
+    background: rgba(250, 249, 246, 0.7);
+    border: 2px solid rgba(77, 45, 24, 0.18);
+    border-radius: 16px;
+    padding: 14px;
+    text-align: center;
+    font-size: 1.05rem;
+  }
+
+  .stats-actions,
+  .stats-tabs {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+
+  .pill-button {
+    border: 2px solid var(--wood);
+    background: var(--soft-white);
+    color: var(--wood);
+    border-radius: 999px;
+    padding: 12px 22px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 6px 6px 0 var(--mustard);
+  }
+
+  .pill-button:hover {
+    background: var(--mustard);
+    color: white;
+  }
+
+  .tab-content {
+    margin-top: 18px;
+  }
+
+  .stats-card {
+    background: rgba(250, 249, 246, 0.92);
+    border: 2px solid rgba(77, 45, 24, 0.18);
+    border-radius: 20px;
+    padding: 18px;
+  }
+
+  .weight-form {
+    display: none;
+    margin: 14px auto 20px;
+    max-width: 340px;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .weight-form.active {
+    display: flex;
+  }
+
+  .weight-form input {
+    flex: 1;
+    padding: 12px;
+    border: 2px solid var(--wood);
+    border-radius: 12px;
+    background: var(--soft-white);
+    color: var(--wood);
+  }
+
+  #calendar {
+    min-height: 700px;
+  }
+
+  .fc {
+    --fc-border-color: rgba(77, 45, 24, 0.15);
+    --fc-page-bg-color: transparent;
+    --fc-neutral-bg-color: rgba(244, 238, 224, 0.55);
+    --fc-list-event-hover-bg-color: rgba(233, 180, 76, 0.15);
+    color: var(--wood);
+  }
+
+  .fc .fc-toolbar-title {
+    color: var(--wood);
+    font-size: 2rem;
+    font-weight: 800;
+  }
+
+  .fc .fc-button {
+    background: var(--wood);
+    border-color: var(--wood);
+    color: var(--soft-white);
+    border-radius: 12px;
+    box-shadow: none;
+    text-transform: lowercase;
+    padding: 10px 14px;
+  }
+
+  .fc .fc-button:hover,
+  .fc .fc-button.fc-button-active {
+    background: var(--burnt-orange);
+    border-color: var(--burnt-orange);
+  }
+
+  .fc .fc-daygrid-day-number,
+  .fc .fc-col-header-cell-cushion {
+    color: var(--wood);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .fc-event-main {
+    padding: 4px 6px;
+  }
+
+  .event-title {
+    font-weight: 700;
+    font-size: 0.92rem;
+    line-height: 1.15;
+  }
+
+  .event-meta {
+    font-size: 0.78rem;
+    opacity: 0.95;
+    margin-top: 3px;
+  }
+
+  .chart-wrap {
+    height: 420px;
+  }
+
+  @media (max-width: 850px) {
+    .profile-summary {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 560px) {
+    .profile-summary {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="stats-shell">
+  <h2 style="text-align: center; margin-bottom: 20px;">Your Stats</h2>
+
+  <div class="retro-panel">
+    <div class="profile-summary">
+      <div class="profile-item"><strong>User:</strong> {{ user.first_name|default:user.username }}</div>
+      <div class="profile-item"><strong>Height:</strong> {{ profile.height|default:"Not set" }}</div>
+      <div class="profile-item">
+        <strong>Current Weight:</strong>
+        {% if current_weight %}{{ current_weight }} lbs{% else %}Not set{% endif %}
+      </div>
+      <div class="profile-item">
+        <strong>Goal:</strong>
+        {% if profile.goal_weight %}{{ profile.goal_weight }} lbs{% else %}Not set{% endif %}
+      </div>
     </div>
 
-    <div class="stats-tabs"
-         style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap;">
-        <button id="calendar-tab"
-                onclick="openTab('calendar-view', this)"
-                class="category-box"
-                style="padding: 10px 30px; cursor: pointer;">
-            Calendar
-        </button>
-        <button id="graph-tab"
-                onclick="openTab('graph-view', this)"
-                class="category-box"
-                style="padding: 10px 30px; cursor: pointer;">
-            Weight Progress
-        </button>
+    <div class="stats-actions">
+      <button class="pill-button" type="button" onclick="toggleWeightForm()">Add Weight</button>
     </div>
 
-    <hr style="border: 0; border-top: 1px solid var(--burnt-orange); margin-bottom: 20px;">
+    <form method="POST" action="{% url 'log_weight' %}" id="weight-form" class="weight-form">
+      {% csrf_token %}
+      <input type="number" name="weight" min="1" placeholder="Enter weight (lbs)" required>
+      <button type="submit" class="pill-button">Save</button>
+    </form>
+
+    <div class="stats-tabs">
+      <button id="calendar-tab" onclick="openTab('calendar-view', this)" class="pill-button" type="button">Calendar</button>
+      <button id="graph-tab" onclick="openTab('graph-view', this)" class="pill-button" type="button">Weight Progress</button>
+    </div>
 
     <div id="calendar-view" class="tab-content">
-        <h3 style="text-align: center; margin-bottom: 15px;">Activity Log</h3>
-        <div id="calendar"
-             style="background: white; padding: 20px; border-radius: 10px; color: black; min-height: 500px;">
-        </div>
+      <h3 style="text-align: center; margin-bottom: 15px;">Activity Log</h3>
+      <div class="stats-card">
+        <div id="calendar"></div>
+      </div>
     </div>
 
     <div id="graph-view" class="tab-content" style="display: none;">
-        <h3 style="text-align: center; margin-bottom: 15px;">Weight Over Time</h3>
-        <div style="background: white; padding: 20px; border-radius: 10px;">
-            <canvas id="weightChart" style="width: 100%; height: 400px;"></canvas>
+      <h3 style="text-align: center; margin-bottom: 15px;">Weight Over Time</h3>
+      <div class="stats-card">
+        <div class="chart-wrap">
+          <canvas id="weightChart"></canvas>
         </div>
+      </div>
     </div>
-
+  </div>
 </div>
 
 <script>
-function openTab(tabId, buttonEl) {
-    const contents = document.getElementsByClassName("tab-content");
+  function openTab(tabId, buttonEl) {
+    const contents = document.getElementsByClassName('tab-content');
     for (let i = 0; i < contents.length; i++) {
-        contents[i].style.display = "none";
+      contents[i].style.display = 'none';
     }
 
-    document.getElementById(tabId).style.display = "block";
+    document.getElementById(tabId).style.display = 'block';
 
-    const buttons = document.querySelectorAll(".stats-tabs button");
+    const buttons = document.querySelectorAll('.stats-tabs button');
     buttons.forEach(btn => {
-        btn.style.opacity = "0.7";
-        btn.style.border = "";
+      btn.style.opacity = '0.78';
+      btn.style.borderColor = 'var(--wood)';
+      btn.style.background = 'var(--soft-white)';
+      btn.style.color = 'var(--wood)';
     });
 
     if (buttonEl) {
-        buttonEl.style.opacity = "1";
-        buttonEl.style.border = "1px solid var(--burnt-orange)";
+      buttonEl.style.opacity = '1';
+      buttonEl.style.background = 'var(--burnt-orange)';
+      buttonEl.style.color = 'var(--soft-white)';
+      buttonEl.style.borderColor = 'var(--burnt-orange)';
     }
 
     window.dispatchEvent(new Event('resize'));
-}
+  }
 
-document.addEventListener('DOMContentLoaded', function () {
+  function toggleWeightForm() {
+    document.getElementById('weight-form').classList.toggle('active');
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
     const eventsData = JSON.parse(document.getElementById('stats-events-data').textContent);
     const labelsData = JSON.parse(document.getElementById('stats-labels-data').textContent);
     const valuesData = JSON.parse(document.getElementById('stats-values-data').textContent);
@@ -109,47 +262,100 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const calendarEl = document.getElementById('calendar');
     if (calendarEl) {
-        const calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            events: eventsData,
-            eventDisplay: 'block',
-            height: 'auto'
-        });
-        calendar.render();
+      const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        events: eventsData,
+        height: 'auto',
+        dayMaxEventRows: 3,
+        eventDisplay: 'block',
+        eventContent: function(arg) {
+          const title = document.createElement('div');
+          title.className = 'event-title';
+          title.textContent = arg.event.title;
+
+          const meta = document.createElement('div');
+          meta.className = 'event-meta';
+          meta.textContent = arg.event.extendedProps.summary || '';
+
+          return { domNodes: [title, meta] };
+        }
+      });
+      calendar.render();
     }
 
     const chartCanvas = document.getElementById('weightChart');
     if (chartCanvas) {
-        new Chart(chartCanvas.getContext('2d'), {
-            type: 'line',
-            data: {
-                labels: labelsData,
-                datasets: [{
-                    label: 'Weight (lbs)',
-                    data: valuesData,
-                    borderColor: '#e67e22',
-                    backgroundColor: 'rgba(230, 126, 34, 0.2)',
-                    fill: true,
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: true
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: false
-                    }
+      new Chart(chartCanvas.getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: labelsData,
+          datasets: [{
+            label: 'Weight (lbs)',
+            data: valuesData,
+            borderColor: '#9b2915',
+            backgroundColor: 'rgba(233, 180, 76, 0.25)',
+            pointBackgroundColor: '#4d2d18',
+            pointBorderColor: '#4d2d18',
+            pointRadius: 4,
+            pointHoverRadius: 5,
+            fill: true,
+            tension: 0.28
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: {
+                color: '#4d2d18',
+                font: {
+                  size: 14,
+                  weight: '600'
                 }
+              }
             }
-        });
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Days',
+                color: '#4d2d18',
+                font: {
+                  size: 14,
+                  weight: '700'
+                }
+              },
+              ticks: {
+                color: '#4d2d18'
+              },
+              grid: {
+                color: 'rgba(77, 45, 24, 0.08)'
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Weight (lbs)',
+                color: '#4d2d18',
+                font: {
+                  size: 14,
+                  weight: '700'
+                }
+              },
+              ticks: {
+                color: '#4d2d18'
+              },
+              grid: {
+                color: 'rgba(77, 45, 24, 0.08)'
+              }
+            }
+          }
+        }
+      });
     }
-});
+  });
 </script>
 
 {% endblock %}
