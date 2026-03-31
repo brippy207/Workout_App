@@ -174,3 +174,23 @@ def stats(request):
         'values_json': values,
     }
     return render(request, 'tracker/stats.html', context)
+
+@login_required
+def nutrition(request):
+    from .models import FoodLog
+    today = timezone.localdate()
+    food_logs = FoodLog.objects.filter(user=request.user, date=today)
+    return render(request, 'tracker/nutrition.html', {'food_logs': food_logs})
+
+@login_required
+@require_POST
+def log_food(request):
+    from .models import FoodLog
+    FoodLog.objects.create(
+        user=request.user,
+        food_name=request.POST.get('food_name'),
+        protein=float(request.POST.get('protein', 0)),
+        carbs=float(request.POST.get('carbs', 0)),
+        fats=float(request.POST.get('fats', 0)),
+    )
+    return redirect('nutrition')

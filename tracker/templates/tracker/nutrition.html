@@ -4,142 +4,44 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'tracker/css/grid_layout.css' %}"> 
 <style>
+    /* ... (Your existing CSS remains exactly the same) ... */
     .container { max-width: 800px; margin: 0 auto; }
-
-    .settings-card {
-        background: var(--soft-white);
-        border: 2px solid var(--wood);
-        padding: 20px;
-        border-radius: 12px;
-        margin-bottom: 30px;
-    }
-
+    .settings-card { background: var(--soft-white); border: 2px solid var(--wood); padding: 20px; border-radius: 12px; margin-bottom: 30px; }
     .input-row { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px; }
-    .input-group { display: flex; flex-direction: column; }
-
-    input {
-        border: 2px solid var(--wood);
-        padding: 8px;
-        border-radius: 6px;
-        background: var(--cream);
-        font-family: inherit;
-    }
-
+    input { border: 2px solid var(--wood); padding: 8px; border-radius: 6px; background: var(--cream); font-family: inherit; }
     .progress-container { margin-bottom: 25px; }
-    .progress-label {
-        display: flex;
-        justify-content: space-between;
-        font-weight: bold;
-        text-transform: lowercase;
-        margin-bottom: 5px;
-    }
-    .progress-bg {
-        background: var(--soft-white);
-        border: 3px solid var(--wood);
-        height: 30px;
-        border-radius: 15px;
-        overflow: hidden;
-        box-shadow: 4px 4px 0px var(--mustard);
-    }
-    .progress-fill {
-        height: 100%;
-        width: 0%;
-        background: var(--burnt-orange);
-        transition: width 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
-    .meal-log-container {
-        background: var(--soft-white);
-        border: 2px solid var(--wood);
-        border-radius: 12px;
-        margin-top: 30px;
-        overflow: hidden;
-    }
-    .log-header {
-        background: var(--wood);
-        color: var(--cream);
-        padding: 10px 20px;
-        font-weight: bold;
-        display: grid;
-        grid-template-columns: 2fr 1fr 1fr 1fr;
-        text-transform: lowercase;
-    }
-    .log-entry {
-        display: grid;
-        grid-template-columns: 2fr 1fr 1fr 1fr;
-        padding: 12px 20px;
-        border-bottom: 1px dashed var(--wood);
-        animation: slideIn 0.3s ease-out;
-    }
-    .btn-add {
-        background: var(--mustard);
-        border: 2px solid var(--wood);
-        padding: 10px 20px;
-        font-weight: bold;
-        cursor: pointer;
-        border-radius: 8px;
-    }
-
-    .cal-display-70s {
-        background: var(--wood);
-        color: var(--mustard);
-        padding: 15px;
-        border-radius: 8px;
-        text-align: center;
-        font-size: 1.5rem;
-        font-weight: bold;
-        margin-bottom: 25px;
-        border: 2px solid var(--burnt-orange);
-    }
-
-    .slider-grid {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .slider-header {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 8px;
-        font-weight: bold;
-        text-transform: lowercase;
-    }
-
-    .value-badge {
-        background: var(--mustard);
-        padding: 2px 10px;
-        border-radius: 4px;
-        color: var(--wood);
-    }
-
-    .retro-slider {
-        -webkit-appearance: none;
-        width: 100%;
-        height: 12px;
-        background: var(--cream);
-        border: 2px solid var(--wood);
-        border-radius: 10px;
-        outline: none;
-        margin: 0;
-        box-sizing: border-box;
-    }
-
-    .retro-slider::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 34px;
-        height: 34px;
-        background: var(--burnt-orange);
-        cursor: pointer;
-        border: 2px solid var(--wood);
-        border-radius: 60%;
-    }
-
-    @keyframes slideIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+    .progress-label { display: flex; justify-content: space-between; font-weight: bold; text-transform: lowercase; margin-bottom: 5px; }
+    .progress-bg { background: var(--soft-white); border: 3px solid var(--wood); height: 30px; border-radius: 15px; overflow: hidden; box-shadow: 4px 4px 0px var(--mustard); }
+    .progress-fill { height: 100%; width: 0%; background: var(--burnt-orange); transition: width 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .meal-log-container { background: var(--soft-white); border: 2px solid var(--wood); border-radius: 12px; margin-top: 30px; overflow: hidden; }
+    .log-header { background: var(--wood); color: var(--cream); padding: 10px 20px; font-weight: bold; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; text-transform: lowercase; }
+    .log-entry { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; padding: 12px 20px; border-bottom: 1px dashed var(--wood); animation: slideIn 0.3s ease-out; }
+    .btn-add { background: var(--mustard); border: 2px solid var(--wood); padding: 10px 20px; font-weight: bold; cursor: pointer; border-radius: 8px; }
+    .cal-display-70s { background: var(--wood); color: var(--mustard); padding: 15px; border-radius: 8px; text-align: center; font-size: 1.5rem; font-weight: bold; margin-bottom: 25px; border: 2px solid var(--burnt-orange); }
+    .slider-grid { display: flex; flex-direction: column; gap: 10px; }
+    .slider-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; text-transform: lowercase; }
+    .value-badge { background: var(--mustard); padding: 2px 10px; border-radius: 4px; color: var(--wood); }
+    .retro-slider { -webkit-appearance: none; width: 100%; height: 12px; background: var(--cream); border: 2px solid var(--wood); border-radius: 10px; outline: none; margin: 0; box-sizing: border-box; }
+    .retro-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 34px; height: 34px; background: var(--burnt-orange); cursor: pointer; border: 2px solid var(--wood); border-radius: 60%; }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    .mode-toggle { display: flex; gap: 0; margin-bottom: 20px; border: 2px solid var(--wood); border-radius: 10px; overflow: hidden; font-family: 'Courier New', Courier, monospace; font-size: 0.85rem; font-weight: bold; }
+    .mode-toggle button { flex: 1; padding: 10px 14px; border: none; cursor: pointer; background: var(--cream); color: var(--wood); text-transform: lowercase; transition: background 0.2s, color 0.2s; font-family: inherit; font-size: inherit; font-weight: inherit; }
+    .mode-toggle button.active { background: var(--wood); color: var(--mustard); }
+    .mode-toggle button:first-child { border-right: 2px solid var(--wood); }
+    #auto-panel { display: none; }
+    .search-row { display: flex; gap: 10px; margin-bottom: 14px; }
+    .search-row input { flex: 1; }
+    .search-row button { background: var(--burnt-orange); color: var(--soft-white); border: 2px solid var(--wood); border-radius: 8px; padding: 8px 16px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+    #search-results { display: none; flex-direction: column; gap: 8px; margin-bottom: 16px; max-height: 220px; overflow-y: auto; }
+    .result-item { padding: 10px 14px; background: var(--cream); border: 2px solid var(--wood); border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: background 0.15s; }
+    .result-item:hover { background: var(--mustard); color: white; }
+    .result-item.selected { background: var(--wood); color: var(--mustard); border-color: var(--burnt-orange); }
+    .result-name { font-weight: bold; text-transform: lowercase; }
+    .result-meta { font-size: 0.78rem; opacity: 0.75; margin-top: 2px; font-family: 'Courier New', Courier, monospace; }
+    #serving-slider-section { display: none; margin-bottom: 10px; }
+    #whole-items-section { display: none; align-items: center; gap: 14px; margin-top: 14px; margin-bottom: 10px; }
+    #auto-preview { display: none; background: var(--cream); border: 2px dashed var(--wood); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-family: 'Courier New', Courier, monospace; font-size: 0.85rem; color: var(--wood); }
+    .search-status { font-family: 'Courier New', Courier, monospace; font-size: 0.82rem; color: var(--burnt-orange); margin-bottom: 8px; min-height: 1.2em; }
 </style>
 {% endblock %}
 
@@ -147,36 +49,25 @@
 <div class="container">
     <h1>food tracker (macros)</h1>
 
+    {% csrf_token %}
+
     <div class="settings-card">
         <h3>adjust your daily goals</h3>
-
         <div class="cal-display-70s">
             <label>Target Intake:</label>
             <span id="goal-cal-display">740</span> kcal
         </div>
-
         <div class="slider-grid">
             <div class="slider-group">
-                <div class="slider-header">
-                    <label>protein</label>
-                    <span class="value-badge"><span id="val-p">100</span>g</span>
-                </div>
+                <div class="slider-header"><label>protein</label><span class="value-badge"><span id="val-p">100</span>g</span></div>
                 <input type="range" id="goal-p" min="40" max="300" value="100" class="retro-slider" oninput="updateBars()">
             </div>
-
             <div class="slider-group">
-                <div class="slider-header">
-                    <label>carbs</label>
-                    <span class="value-badge"><span id="val-c">300</span>g</span>
-                </div>
+                <div class="slider-header"><label>carbs</label><span class="value-badge"><span id="val-c">300</span>g</span></div>
                 <input type="range" id="goal-c" min="100" max="500" value="300" class="retro-slider" oninput="updateBars()">
             </div>
-
             <div class="slider-group">
-                <div class="slider-header">
-                    <label>fats</label>
-                    <span class="value-badge"><span id="val-f">70</span>g</span>
-                </div>
+                <div class="slider-header"><label>fats</label><span class="value-badge"><span id="val-f">70</span>g</span></div>
                 <input type="range" id="goal-f" min="20" max="300" value="70" class="retro-slider" oninput="updateBars()">
             </div>
         </div>
@@ -192,56 +83,108 @@
                 <div id="cal-bar" class="progress-fill" style="background: var(--wood);"></div>
             </div>
         </div>
-
         <div class="progress-container">
             <div class="progress-label"><span>protein</span> <span id="p-text">0 / 150g</span></div>
-            <div class="progress-bg">
-                <div id="p-bar" class="progress-fill" style="background: var(--burnt-orange);"></div>
-            </div>
+            <div class="progress-bg"><div id="p-bar" class="progress-fill" style="background: var(--burnt-orange);"></div></div>
         </div>
-
         <div class="progress-container">
             <div class="progress-label"><span>carbs</span> <span id="c-text">0 / 200g</span></div>
-            <div class="progress-bg">
-                <div id="c-bar" class="progress-fill" style="background: var(--mustard);"></div>
-            </div>
+            <div class="progress-bg"><div id="c-bar" class="progress-fill" style="background: var(--mustard);"></div></div>
         </div>
-
         <div class="progress-container">
             <div class="progress-label"><span>fats</span> <span id="f-text">0 / 70g</span></div>
-            <div class="progress-bg">
-                <div id="f-bar" class="progress-fill" style="background: #8b5e3c;"></div>
-            </div>
+            <div class="progress-bg"><div id="f-bar" class="progress-fill" style="background: #8b5e3c;"></div></div>
         </div>
     </div>
 
     <div class="settings-card">
         <h3>add food item</h3>
-        <div class="input-row">
-            <input type="number" id="add-s" placeholder="number of servings" style="flex: 1;">
-            <input type="number" id="add-p" placeholder="p (g) (per serving)" style="flex: 1;">
-            <input type="number" id="add-c" placeholder="c (g) (per serving)" style="flex: 1;">
-            <input type="number" id="add-f" placeholder="f (g) (per serving)" style="flex: 1;">
-            <input type="text" id="food-name" placeholder="food name" style="flex: 1;">
-            <button class="btn-add" onclick="addFood()">add to log</button>
+        <div class="mode-toggle">
+            <button id="btn-manual" class="active" onclick="switchMode('manual')">manual (most accurate)</button>
+            <button id="btn-auto" onclick="switchMode('auto')">automatic (most convenient)</button>
+        </div>
+        <div id="manual-panel">
+            <div class="input-row">
+                <input type="number" id="add-s" placeholder="servings" style="flex: 1;">
+                <input type="number" id="add-p" placeholder="p (g)" style="flex: 1;">
+                <input type="number" id="add-c" placeholder="c (g)" style="flex: 1;">
+                <input type="number" id="add-f" placeholder="f (g)" style="flex: 1;">
+                <input type="text" id="food-name" placeholder="food name" style="flex: 1;">
+                <button class="btn-add" onclick="addFood()">add to log</button>
+            </div>
+        </div>
+        <div id="auto-panel">
+            <div class="search-row">
+                <input type="text" id="auto-search-input" placeholder="search a grocery item...">
+                <button onclick="searchFood()">search</button>
+            </div>
+            <div class="search-status" id="search-status"></div>
+            <div id="search-results"></div>
+            <div id="serving-slider-section">
+                <div class="slider-header"><label>how much did you eat?</label><span class="value-badge"><span id="serving-pct-display">100</span>%</span></div>
+                <input type="range" id="serving-pct-slider" min="1" max="100" value="100" class="retro-slider" oninput="updateAutoPreview()">
+            </div>
+            <div id="whole-items-section">
+                <span style="font-family: 'Courier New', Courier, monospace; font-weight: bold; color: var(--burnt-orange);">OR</span>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <input type="number" id="whole-items-input" min="0.1" step="0.1" placeholder="e.g. 2.5" style="width: 100px;" oninput="updateAutoPreview()">
+                    <span style="font-family: 'Courier New', Courier, monospace; font-size: 0.78rem; font-weight: bold; text-transform: lowercase; color: var(--wood);">whole items</span>
+                </div>
+            </div>
+            <div id="auto-preview"></div>
+            <button class="btn-add" onclick="addAutoFood()" style="width: 100%; margin-top: 4px;">add to log</button>
         </div>
     </div>
 
     <div class="meal-log-container">
-        <div class="log-header">
-            <span>food item</span><span>p</span><span>c</span><span>f</span>
-        </div>
+        <div class="log-header"><span>food item</span><span>p</span><span>c</span><span>f</span></div>
         <div id="food-log-list">
-            <div class="log-entry" style="color: gray; font-style: italic;">
+            {% for log in food_logs %}
+            <div class="log-entry">
+                <span>{{ log.food_name }}</span>
+                <span>{{ log.protein }}g</span>
+                <span>{{ log.carbs }}g</span>
+                <span>{{ log.fats }}g</span>
+            </div>
+            {% empty %}
+            <div class="log-entry" id="empty-log-msg" style="color: gray; font-style: italic;">
                 <span>no items logged yet...</span>
             </div>
+            {% endfor %}
         </div>
     </div>
 </div>
 
 <script>
+// ── Initialize Totals from Database ──────────────────────────────────────────
 let currentP = 0; let currentC = 0; let currentF = 0;
+{% for log in food_logs %}
+    currentP += parseFloat("{{ log.protein }}");
+    currentC += parseFloat("{{ log.carbs }}");
+    currentF += parseFloat("{{ log.fats }}");
+{% endfor %}
 
+let selectedProduct = null;
+
+// ── Shared Database Helper ──────────────────────────────────────────────────
+async function saveToDB(name, p, c, f) {
+    const formData = new FormData();
+    formData.append('food_name', name);
+    formData.append('protein', p);
+    formData.append('carbs', c);
+    formData.append('fats', f);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+    try {
+        await fetch("{% url 'log_food' %}", {
+            method: "POST",
+            body: formData,
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        });
+    } catch (e) { console.error("Save failed", e); }
+}
+
+// ── UI Updates ──────────────────────────────────────────────────────────────
 function updateBars() {
     const gP = parseInt(document.getElementById('goal-p').value);
     const gC = parseInt(document.getElementById('goal-c').value);
@@ -256,63 +199,134 @@ function updateBars() {
 
     const currentCal = (currentP * 4) + (currentC * 4) + (currentF * 9);
 
-    document.getElementById('cal-text').innerText = `${currentCal} / ${totalGoalCal} kcal`;
-    document.getElementById('p-text').innerText = `${currentP} / ${gP}g`;
-    document.getElementById('c-text').innerText = `${currentC} / ${gC}g`;
-    document.getElementById('f-text').innerText = `${currentF} / ${gF}g`;
+    document.getElementById('cal-text').innerText = `${Math.round(currentCal)} / ${totalGoalCal} kcal`;
+    document.getElementById('p-text').innerText   = `${Math.round(currentP)} / ${gP}g`;
+    document.getElementById('c-text').innerText   = `${Math.round(currentC)} / ${gC}g`;
+    document.getElementById('f-text').innerText   = `${Math.round(currentF)} / ${gF}g`;
 
     const getWidth = (curr, goal) => (goal > 0) ? Math.min((curr / goal) * 100, 100) : 0;
-
     document.getElementById('cal-bar').style.width = getWidth(currentCal, totalGoalCal) + '%';
-    document.getElementById('p-bar').style.width = getWidth(currentP, gP) + '%';
-    document.getElementById('c-bar').style.width = getWidth(currentC, gC) + '%';
-    document.getElementById('f-bar').style.width = getWidth(currentF, gF) + '%';
+    document.getElementById('p-bar').style.width   = getWidth(currentP, gP) + '%';
+    document.getElementById('c-bar').style.width   = getWidth(currentC, gC) + '%';
+    document.getElementById('f-bar').style.width   = getWidth(currentF, gF) + '%';
 }
 
 window.onload = updateBars;
 
+function switchMode(mode) {
+    document.getElementById('manual-panel').style.display = (mode === 'manual') ? 'block' : 'none';
+    document.getElementById('auto-panel').style.display   = (mode === 'auto') ? 'block' : 'none';
+    document.getElementById('btn-manual').className = (mode === 'manual') ? 'active' : '';
+    document.getElementById('btn-auto').className   = (mode === 'auto') ? 'active' : '';
+}
+
+// ── Manual Add ──────────────────────────────────────────────────────────────
 function addFood() {
     const nameVal = document.getElementById('food-name').value.trim();
-    const servingsVal = document.getElementById('add-s').value;
-    const pVal = document.getElementById('add-p').value;
-    const cVal = document.getElementById('add-c').value;
-    const fVal = document.getElementById('add-f').value;
+    const s = parseFloat(document.getElementById('add-s').value);
+    const p = parseFloat(document.getElementById('add-p').value);
+    const c = parseFloat(document.getElementById('add-c').value);
+    const f = parseFloat(document.getElementById('add-f').value);
 
-    if (!nameVal || !servingsVal || !pVal || !cVal || !fVal) {
-        alert("Please fill out all fields before adding to your log.");
-        return;
-    }
+    if (!nameVal || isNaN(s) || isNaN(p) || isNaN(c) || isNaN(f)) return alert("Fill all fields");
 
-    const p = parseInt(pVal);
-    const c = parseInt(cVal);
-    const f = parseInt(fVal);
-    const servings = parseInt(servingsVal);
-
-    currentP += p * servings;
-    currentC += c * servings;
-    currentF += f * servings;
+    const totalP = p * s; const totalC = c * s; const totalF = f * s;
+    currentP += totalP; currentC += totalC; currentF += totalF;
+    
     updateBars();
+    pushLogUI(`${nameVal.toLowerCase()} (${s} servings)`, totalP, totalC, totalF);
+    saveToDB(nameVal, totalP, totalC, totalF);
 
+    ['food-name','add-s','add-p','add-c','add-f'].forEach(id => document.getElementById(id).value = '');
+}
+
+// ── USDA Search & Auto Logic ────────────────────────────────────────────────
+async function searchFood() {
+    const query = document.getElementById('auto-search-input').value.trim();
+    if (!query) return;
+    const status = document.getElementById('search-status');
+    const results = document.getElementById('search-results');
+    status.textContent = 'searching...'; results.innerHTML = '';
+
+    try {
+        const url = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(query)}&api_key=akLwE4dqwk2WtzARAastgkHeM09q1QeDgI4lZK2J`;
+        const res = await fetch(url); const data = await res.json();
+        const products = (data.foods || []).filter(p => p.foodNutrients.some(n => n.nutrientName === 'Protein'));
+        
+        if (products.length === 0) { status.textContent = 'no results found.'; return; }
+        status.textContent = `${products.length} results found — pick one:`;
+        results.style.display = 'flex';
+
+        products.forEach(p => {
+            const macros = macrosFullPackage(p);
+            const item = document.createElement('div');
+            item.className = 'result-item';
+            item.innerHTML = `<div class="result-name">${p.description.toLowerCase()}</div><div class="result-meta">p: ${macros.p}g c: ${macros.c}g f: ${macros.f}g</div>`;
+            item.onclick = () => {
+                document.querySelectorAll('.result-item').forEach(el => el.classList.remove('selected'));
+                item.classList.add('selected');
+                selectedProduct = p;
+                document.getElementById('serving-slider-section').style.display = 'block';
+                document.getElementById('whole-items-section').style.display = 'flex';
+                updateAutoPreview();
+            };
+            results.appendChild(item);
+        });
+    } catch (e) { status.textContent = 'search failed.'; }
+}
+
+function macrosPerServing(nutrients) {
+    const find = (n) => { const m = nutrients.find(x => x.nutrientName === n); return m ? Math.round(m.value*10)/10 : 0; };
+    return { p: find('Protein'), c: find('Carbohydrate, by difference'), f: find('Total lipid (fat)') };
+}
+
+function macrosFullPackage(product) {
+    const base = macrosPerServing(product.foodNutrients);
+    const spc = parseFloat(product.servingsPerContainer);
+    const valid = !isNaN(spc) && spc > 0;
+    return { p: valid ? Math.round(base.p*spc*10)/10 : base.p, c: valid ? Math.round(base.c*spc*10)/10 : base.c, f: valid ? Math.round(base.f*spc*10)/10 : base.f, warned: !valid };
+}
+
+function updateAutoPreview() {
+    if (!selectedProduct) return;
+    const pct = parseInt(document.getElementById('serving-pct-slider').value);
+    document.getElementById('serving-pct-display').textContent = pct;
+    const whole = parseFloat(document.getElementById('whole-items-input').value);
+    const scale = (!isNaN(whole) && whole > 0) ? whole : pct/100;
+    const base = macrosFullPackage(selectedProduct);
+    const p = Math.round(base.p*scale*10)/10; const c = Math.round(base.c*scale*10)/10; const f = Math.round(base.f*scale*10)/10;
+    const preview = document.getElementById('auto-preview');
+    preview.style.display = 'block';
+    preview.innerHTML = `<strong>${selectedProduct.description.toLowerCase()}</strong><br>p: ${p}g | c: ${c}g | f: ${f}g`;
+}
+
+function addAutoFood() {
+    if (!selectedProduct) return alert("select a food");
+    const pct = parseInt(document.getElementById('serving-pct-slider').value);
+    const whole = parseFloat(document.getElementById('whole-items-input').value);
+    const scale = (!isNaN(whole) && whole > 0) ? whole : pct/100;
+    const base = macrosFullPackage(selectedProduct);
+    const p = base.p*scale; const c = base.c*scale; const f = base.f*scale;
+    
+    currentP += p; currentC += c; currentF += f;
+    updateBars();
+    pushLogUI(selectedProduct.description.toLowerCase(), p, c, f);
+    saveToDB(selectedProduct.description, p, c, f);
+
+    selectedProduct = null;
+    document.getElementById('auto-search-input').value = '';
+    document.getElementById('search-results').style.display = 'none';
+    document.getElementById('auto-preview').style.display = 'none';
+}
+
+function pushLogUI(label, p, c, f) {
     const logList = document.getElementById('food-log-list');
-    if (logList.innerText.includes("no items logged yet")) {
-        logList.innerHTML = '';
-    }
-
+    const empty = document.getElementById('empty-log-msg');
+    if (empty) empty.remove();
     const entry = document.createElement('div');
     entry.className = 'log-entry';
-    entry.innerHTML = `
-        <span>${nameVal.toLowerCase()} (${servings} servings)</span>
-        <span>${p}g</span>
-        <span>${c}g</span>
-        <span>${f}g</span>
-    `;
+    entry.innerHTML = `<span>${label}</span><span>${Math.round(p)}g</span><span>${Math.round(c)}g</span><span>${Math.round(f)}g</span>`;
     logList.prepend(entry);
-
-    document.getElementById('food-name').value = '';
-    document.getElementById('add-s').value = '';
-    document.getElementById('add-p').value = '';
-    document.getElementById('add-c').value = '';
-    document.getElementById('add-f').value = '';
 }
 </script>
 {% endblock %}

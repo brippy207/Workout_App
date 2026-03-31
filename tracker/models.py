@@ -33,3 +33,14 @@ class WeightEntry(models.Model):
     class Meta:
         ordering = ['date']
 
+class FoodLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    food_name = models.CharField(max_length=200)
+    protein = models.FloatField()
+    carbs = models.FloatField()
+    fats = models.FloatField()
+    date = models.DateField(default=timezone.localdate)
+
+    class Meta:
+        ordering = ['-date']
+
