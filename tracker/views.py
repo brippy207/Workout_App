@@ -8,6 +8,10 @@ from .forms import SignUpForm
 from .models import WorkoutLog, WeightEntry, Profile
 
 import json
+import requests
+from django.conf import settings
+from django.http import JsonResponse
+from django.core.cache import cache
 
 
 def signup(request):
@@ -194,3 +198,42 @@ def log_food(request):
         fats=float(request.POST.get('fats', 0)),
     )
     return redirect('nutrition')
+
+
+@require_POST
+def search_food(request):
+    """Proxy endpoint that forwards search queries to the USDA FDC API.
+    Keeps the API key on the server and caches results for 30 minutes.
+    """
+    try:
+        payload = json.loads(request.body.decode() or "{}")
+        query = (payload.get('query') or "").strip()
+        if not query:
+            return JsonResponse({'foods': []})
+
+        cache_key = f"usda_search:{query.lower()}"
+        cached = cache.get(cache_key)
+        if cached:
+            return JsonResponse({'foods': cached})
+
+        url = 'https://api.nal.usda.gov/fdc/v1/foods/search'
+        params = {'api_key': getattr(settings, 'USDA_API_KEY', ''), 'query': query}
+        r = requests.get(url, params=params, timeout=8)
+        r.raise_for_status()
+        data = r.json()
+
+        foods = []
+        for f in data.get('foods', [])[:25]:
+            foods.append({
+                'description': f.get('description'),
+                'foodNutrients': [
+                    {'nutrientName': n.get('nutrientName'), 'value': n.get('value')}
+                    for n in f.get('foodNutrients', [])
+                ],
+                'servingsPerContainer': f.get('servingsPerContainer')
+            })
+
+        cache.set(cache_key, foods, 60 * 30)  # cache 30 minutes
+        return JsonResponse({'foods': foods})
+    except Exception:
+        return JsonResponse({'foods': []}, status=500)

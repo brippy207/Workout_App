@@ -1,5 +1,6 @@
 from pathlib import Path
 import mimetypes
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -95,6 +96,9 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+
+# USDA API key (set as environment variable in production)
+USDA_API_KEY = os.environ.get('USDA_API_KEY', '')
 
 # Corrected MIME type forcing
 mimetypes.init()

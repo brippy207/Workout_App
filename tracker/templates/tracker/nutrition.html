@@ -410,11 +410,11 @@
 </div>
 
 <script>
-// ── Initialize Totals from Database ──────────────────────────────────────────
-let currentP = 0; let currentC = 0; let currentF = 0;
-{% for log in food_logs %}
-    currentP += parseFloat("{{ log.protein }}");
-    currentC += parseFloat("{{ log.carbs }}");
+    // ── Initialize Totals from Database ──────────────────────────────────────────
+    let currentP = 0; let currentC = 0; let currentF = 0;
+    {% for log in food_logs %}
+        currentP += parseFloat("{{ log.protein }}");
+        currentC += parseFloat("{{ log.carbs }}");
     currentF += parseFloat("{{ log.fats }}");
 {% endfor %}
 
