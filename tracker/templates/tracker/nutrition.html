@@ -296,6 +296,32 @@
         margin-bottom: 8px;
         min-height: 1.2em;
     }
+
+    .inline-feedback {
+        display: none;
+        margin-top: 14px;
+        padding: 12px 14px;
+        border: 2px solid var(--wood);
+        border-radius: 10px;
+        box-shadow: 4px 4px 0 var(--mustard);
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.88rem;
+        font-weight: bold;
+    }
+
+    .inline-feedback.success {
+        display: block;
+        background: rgba(233, 180, 76, 0.24);
+        border-color: var(--burnt-orange);
+        color: var(--wood);
+    }
+
+    .inline-feedback.error {
+        display: block;
+        background: rgba(155, 41, 21, 0.12);
+        border-color: var(--burnt-orange);
+        color: var(--wood);
+    }
 </style>
 {% endblock %}
 
@@ -388,6 +414,7 @@
             <div id="auto-preview"></div>
             <button class="btn-add" onclick="addAutoFood()" style="width: 100%; margin-top: 4px;">add to log</button>
         </div>
+        <div id="nutrition-feedback" class="inline-feedback" aria-live="polite"></div>
     </div>
 
     <div class="meal-log-container">
@@ -430,12 +457,22 @@ async function saveToDB(name, p, c, f) {
     formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
 
     try {
-        await fetch("{% url 'log_food' %}", {
+        const response = await fetch("{% url 'log_food' %}", {
             method: "POST",
             body: formData,
             headers: { "X-Requested-With": "XMLHttpRequest" }
         });
-    } catch (e) { console.error("Save failed", e); }
+        const payload = await response.json();
+
+        if (!response.ok || !payload.ok) {
+            throw new Error(payload.message || "Could not save that food item.");
+        }
+
+        showFeedback(payload.message || "Food item added.", "success");
+    } catch (e) {
+        console.error("Save failed", e);
+        showFeedback(e.message || "Could not save that food item.", "error");
+    }
 }
 
 // ── UI Updates ──────────────────────────────────────────────────────────────
@@ -474,6 +511,12 @@ function switchMode(mode) {
     document.getElementById('btn-auto').className   = (mode === 'auto') ? 'active' : '';
 }
 
+function showFeedback(message, type) {
+    const feedback = document.getElementById('nutrition-feedback');
+    feedback.textContent = message;
+    feedback.className = `inline-feedback ${type}`;
+}
+
 // ── Manual Add ──────────────────────────────────────────────────────────────
 function addFood() {
     const nameVal = document.getElementById('food-name').value.trim();
@@ -482,7 +525,14 @@ function addFood() {
     const c = parseFloat(document.getElementById('add-c').value);
     const f = parseFloat(document.getElementById('add-f').value);
 
-    if (!nameVal || isNaN(s) || isNaN(p) || isNaN(c) || isNaN(f)) return alert("Fill all fields");
+    if (!nameVal || isNaN(s) || isNaN(p) || isNaN(c) || isNaN(f)) {
+        showFeedback("Fill out every field before adding a food item.", "error");
+        return;
+    }
+    if (s <= 0 || p < 0 || c < 0 || f < 0) {
+        showFeedback("Servings must be above 0 and macros cannot be negative.", "error");
+        return;
+    }
 
     const totalP = p * s; const totalC = c * s; const totalF = f * s;
     currentP += totalP; currentC += totalC; currentF += totalF;
@@ -555,7 +605,10 @@ function updateAutoPreview() {
 }
 
 function addAutoFood() {
-    if (!selectedProduct) return alert("select a food");
+    if (!selectedProduct) {
+        showFeedback("Pick a food from the search results first.", "error");
+        return;
+    }
     const pct = parseInt(document.getElementById('serving-pct-slider').value);
     const whole = parseFloat(document.getElementById('whole-items-input').value);
     const scale = (!isNaN(whole) && whole > 0) ? whole : pct/100;

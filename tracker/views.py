@@ -1,6 +1,10 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
+from django.db import DatabaseError
+from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 
@@ -10,8 +14,39 @@ from .models import WorkoutLog, WeightEntry, Profile
 import json
 import requests
 from django.conf import settings
-from django.http import JsonResponse
-from django.core.cache import cache
+
+
+def _parse_positive_int(value):
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return None
+
+    return parsed if parsed > 0 else None
+
+
+def _parse_nonnegative_float(value):
+    if value in (None, ""):
+        return 0.0
+
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return None
+
+    return parsed if parsed >= 0 else None
+
+
+def _parse_optional_positive_float(value):
+    if value in (None, ""):
+        return None
+
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return None
+
+    return parsed if parsed > 0 else None
 
 
 def signup(request):
@@ -39,7 +74,11 @@ def workouts(request):
 
 @login_required
 def nutrition(request):
-    return render(request, 'tracker/nutrition.html')
+    from .models import FoodLog
+
+    today = timezone.localdate()
+    food_logs = FoodLog.objects.filter(user=request.user, date=today)
+    return render(request, 'tracker/nutrition.html', {'food_logs': food_logs})
 
 
 @login_required
@@ -75,8 +114,12 @@ def workout_setup(request, workout_name):
 @require_POST
 def log_workout(request):
     activity = request.POST.get('activity')
-    distance = request.POST.get('distance') or None
-    duration = request.POST.get('duration') or None
+    distance = _parse_optional_positive_float(request.POST.get('distance'))
+    duration = _parse_positive_int(request.POST.get('duration'))
+
+    if not activity:
+        messages.error(request, "Pick an activity before logging your workout.")
+        return redirect('stats')
 
     color_map = {
         'Running': '#9b2915',
@@ -101,8 +144,8 @@ def log_workout(request):
 @login_required
 @require_POST
 def log_weight(request):
-    weight_value = request.POST.get('weight')
-    if weight_value:
+    weight_value = _parse_positive_int(request.POST.get('weight'))
+    if weight_value is not None:
         WeightEntry.objects.create(
             user=request.user,
             weight=weight_value
@@ -112,6 +155,9 @@ def log_weight(request):
         if profile:
             profile.weight = weight_value
             profile.save(update_fields=['weight'])
+        messages.success(request, "Weight saved.")
+    else:
+        messages.error(request, "Enter a valid weight greater than 0.")
 
     return redirect('stats')
 
@@ -120,7 +166,7 @@ def log_weight(request):
 def stats(request):
     profile = Profile.objects.filter(user=request.user).first()
     workouts = WorkoutLog.objects.filter(user=request.user).order_by('date')
-    weights = WeightEntry.objects.filter(user=request.user).order_by('date')
+    weights = list(WeightEntry.objects.filter(user=request.user).order_by('date', 'id'))
 
     events = []
     for workout in workouts:
@@ -141,34 +187,23 @@ def stats(request):
             }
         })
 
-    values = [
-    float(entry.weight)
-    for entry in weights
-    if entry.weight is not None and float(entry.weight) > 0
-]
-
-    if profile and profile.weight:
-        start_weight = float(profile.weight)
-    elif values:
-        start_weight = float(values[0])
-    else:
-        start_weight = 0
-
-    # x-axis = day count starting at 0
     labels = []
+    values = []
 
     if weights:
         start_date = weights[0].date
         for entry in weights:
-            days_since_start = (entry.date - start_date).days
-            labels.append(days_since_start)
+            if entry.weight is None or entry.weight <= 0:
+                continue
 
-        labels = [0] + labels
-    else:
+            labels.append((entry.date - start_date).days)
+            values.append(float(entry.weight))
+
+    current_weight = values[-1] if values else None
+    if current_weight is None and profile and profile.weight:
+        current_weight = float(profile.weight)
         labels = [0]
-    values = [start_weight] + values
-
-    current_weight = values[-1] if values else start_weight
+        values = [current_weight]
 
     context = {
         'profile': profile,
@@ -180,26 +215,38 @@ def stats(request):
     return render(request, 'tracker/stats.html', context)
 
 @login_required
-def nutrition(request):
-    from .models import FoodLog
-    today = timezone.localdate()
-    food_logs = FoodLog.objects.filter(user=request.user, date=today)
-    return render(request, 'tracker/nutrition.html', {'food_logs': food_logs})
-
-@login_required
 @require_POST
 def log_food(request):
     from .models import FoodLog
+
+    food_name = (request.POST.get('food_name') or "").strip()
+    protein = _parse_nonnegative_float(request.POST.get('protein'))
+    carbs = _parse_nonnegative_float(request.POST.get('carbs'))
+    fats = _parse_nonnegative_float(request.POST.get('fats'))
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+    if not food_name or protein is None or carbs is None or fats is None:
+        error_message = "Enter a food name and valid macro values."
+        if is_ajax:
+            return JsonResponse({'ok': False, 'message': error_message}, status=400)
+        messages.error(request, error_message)
+        return redirect('nutrition')
+
     FoodLog.objects.create(
         user=request.user,
-        food_name=request.POST.get('food_name'),
-        protein=float(request.POST.get('protein', 0)),
-        carbs=float(request.POST.get('carbs', 0)),
-        fats=float(request.POST.get('fats', 0)),
+        food_name=food_name,
+        protein=protein,
+        carbs=carbs,
+        fats=fats,
     )
+    success_message = f"{food_name} added to your food log."
+    if is_ajax:
+        return JsonResponse({'ok': True, 'message': success_message})
+    messages.success(request, success_message)
     return redirect('nutrition')
 
 
+@login_required
 @require_POST
 def search_food(request):
     """Proxy endpoint that forwards search queries to the USDA FDC API.
@@ -235,5 +282,5 @@ def search_food(request):
 
         cache.set(cache_key, foods, 60 * 30)  # cache 30 minutes
         return JsonResponse({'foods': foods})
-    except Exception:
+    except (json.JSONDecodeError, requests.RequestException, ValueError, DatabaseError):
         return JsonResponse({'foods': []}, status=500)

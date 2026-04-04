@@ -11,6 +11,43 @@
 </head>
 
 <body>
+    <style>
+        .flash-stack {
+            width: min(760px, calc(100% - 32px));
+            margin: 96px auto 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            position: relative;
+            z-index: 900;
+        }
+
+        .flash-message {
+            border: 2px solid var(--wood);
+            border-radius: 16px;
+            padding: 14px 18px;
+            box-shadow: 6px 6px 0 var(--mustard);
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            background: var(--soft-white);
+            color: var(--wood);
+        }
+
+        .flash-message.success {
+            background: rgba(233, 180, 76, 0.28);
+            border-color: var(--burnt-orange);
+        }
+
+        .flash-message.error {
+            background: rgba(155, 41, 21, 0.14);
+            border-color: var(--burnt-orange);
+        }
+
+        .flash-message.info {
+            background: rgba(244, 238, 224, 0.96);
+        }
+    </style>
+
     <nav
         style="position: absolute; top: 20px; right: 20px; text-align: right; font-family: 'Courier New', monospace; z-index: 1000;">
         {% if user.is_authenticated %}
@@ -35,6 +72,14 @@
         </div>
         {% endif %}
     </nav>
+
+    {% if messages %}
+    <div class="flash-stack">
+        {% for message in messages %}
+        <div class="flash-message {{ message.tags|default:'info' }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
     <div class="hero-container">
         <h1>workout app</h1>
