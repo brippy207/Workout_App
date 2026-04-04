@@ -1,18 +1,64 @@
 {% extends "base.html" %}
-{% load static %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'tracker/css/grid_layout.css' %}">
-{% endblock %}
-
 {% block content %}
-<h1 style="text-align: center;">workouts</h1>
 
+<style>
+  .workouts-shell {
+    max-width: 1100px;
+    margin: 30px auto;
+    padding: 20px;
+  }
 
-<div class="grid-container">
-    <a href="{% url 'category' 'lifting' %}" class="category-box">weight lifting</a>
-    <a href="{% url 'category' 'cardio' %}" class="category-box">cardio</a>
-    <a href="{% url 'category' 'stretching' %}" class="category-box">stretching</a>
-    <a href="{% url 'category' 'sports' %}" class="category-box">sports</a>
+  .workouts-title {
+    text-align: center;
+    margin-bottom: 24px;
+    color: var(--wood);
+  }
+
+  .workouts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(260px, 1fr));
+    gap: 28px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .category-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 170px;
+    text-decoration: none;
+    background: var(--soft-white);
+    border: 3px solid var(--wood);
+    color: var(--wood);
+    border-radius: 28px;
+    font-size: 2rem;
+    font-weight: 700;
+    box-shadow: 10px 10px 0 var(--mustard);
+    text-align: center;
+    padding: 20px;
+  }
+
+  .category-box:hover {
+    transform: translateY(-2px);
+  }
+
+  @media (max-width: 700px) {
+    .workouts-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="workouts-shell">
+  <h2 class="workouts-title">Workouts</h2>
+
+  <div class="workouts-grid">
+    <a href="{% url 'category' 'lifting' %}" class="category-box">Lifting</a>
+    <a href="{% url 'category' 'cardio' %}" class="category-box">Cardio</a>
+    <a href="{% url 'category' 'sports' %}" class="category-box">Sports</a>
+    <a href="{% url 'category' 'stretching' %}" class="category-box">Stretching</a>
+  </div>
 </div>
+
 {% endblock %}

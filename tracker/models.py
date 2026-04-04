@@ -44,3 +44,42 @@ class FoodLog(models.Model):
     class Meta:
         ordering = ['-date']
 
+class CustomLiftWorkout(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='custom_lift_workouts')
+    name = models.CharField(max_length=120)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+        unique_together = ('user', 'name')
+
+    def __str__(self):
+        return f"{self.user.username} - {self.name}"
+
+
+class CustomLiftExercise(models.Model):
+    workout = models.ForeignKey(CustomLiftWorkout, on_delete=models.CASCADE, related_name='exercises')
+    exercise_name = models.CharField(max_length=120)
+    default_sets = models.PositiveIntegerField()
+    default_reps = models.PositiveIntegerField()
+    default_weight = models.FloatField()
+
+    def __str__(self):
+        return f"{self.workout.name} - {self.exercise_name}"
+
+
+class LiftExerciseLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lift_logs')
+    workout = models.ForeignKey(CustomLiftWorkout, on_delete=models.CASCADE, related_name='lift_logs')
+    exercise = models.ForeignKey(CustomLiftExercise, on_delete=models.CASCADE, related_name='exercise_logs')
+    sets = models.PositiveIntegerField()
+    reps = models.PositiveIntegerField()
+    weight = models.FloatField()
+    date = models.DateField(default=timezone.localdate)
+
+    class Meta:
+        ordering = ['-date', '-id']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.exercise.exercise_name} - {self.date}"
+

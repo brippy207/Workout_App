@@ -13,4 +13,7 @@ urlpatterns = [
     path('log-weight/', views.log_weight, name='log_weight'),
     path('log-food/', views.log_food, name='log_food'),
     path('api/search-food/', views.search_food, name='search_food'),
+    path('lifting/custom/new/', views.create_custom_workout, name='create_custom_workout'),
+    path('lifting/custom/<int:workout_id>/', views.custom_workout_detail, name='custom_workout_detail'),
+    path('lifting/custom/<int:workout_id>/log/', views.log_custom_workout, name='log_custom_workout'),
 ]

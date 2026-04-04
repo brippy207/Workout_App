@@ -9,7 +9,14 @@ from django.views.decorators.http import require_POST
 from django.utils import timezone
 
 from .forms import SignUpForm
-from .models import WorkoutLog, WeightEntry, Profile
+from .models import (
+    WorkoutLog,
+    WeightEntry,
+    Profile,
+    CustomLiftWorkout,
+    CustomLiftExercise,
+    LiftExerciseLog,
+)
 
 import json
 import requests
@@ -69,7 +76,10 @@ def home(request):
 
 @login_required
 def workouts(request):
-    return render(request, 'tracker/workouts.html')
+    custom_workouts = CustomLiftWorkout.objects.filter(user=request.user)
+    return render(request, 'tracker/workouts.html', {
+        'custom_workouts': custom_workouts
+    })
 
 
 @login_required
@@ -92,10 +102,13 @@ def category_detail(request, name):
 
     context = {
         'category_name': name,
-        'sub_categories': data.get(name, [])
+        'sub_categories': data.get(name, []),
     }
-    return render(request, 'tracker/category_detail.html', context)
 
+    if name == 'lifting':
+        context['custom_workouts'] = CustomLiftWorkout.objects.filter(user=request.user)
+
+    return render(request, 'tracker/category_detail.html', context)
 
 @login_required
 def workout_setup(request, workout_name):
@@ -104,10 +117,112 @@ def workout_setup(request, workout_name):
         "Home Gym / Dumbbells",
         "General Commercial Gym",
     ]
+
+    custom_workouts = CustomLiftWorkout.objects.filter(user=request.user)
+
     return render(request, 'tracker/workout_setup.html', {
         'workout_name': workout_name,
-        'gym_options': gym_options
+        'gym_options': gym_options,
+        'custom_workouts': custom_workouts,
     })
+
+@login_required
+def create_custom_workout(request):
+    if request.method == 'POST':
+        workout_name = (request.POST.get('workout_name') or '').strip()
+        exercise_names = request.POST.getlist('exercise_name[]')
+        sets_list = request.POST.getlist('sets[]')
+        reps_list = request.POST.getlist('reps[]')
+        weights_list = request.POST.getlist('weight[]')
+
+        if not workout_name:
+            messages.error(request, "Enter a workout name.")
+            return redirect('create_custom_workout')
+
+        workout = CustomLiftWorkout.objects.create(
+            user=request.user,
+            name=workout_name
+        )
+
+        for i, exercise_name in enumerate(exercise_names):
+            exercise_name = (exercise_name or '').strip()
+            sets_value = _parse_positive_int(sets_list[i]) if i < len(sets_list) else None
+            reps_value = _parse_positive_int(reps_list[i]) if i < len(reps_list) else None
+            weight_value = _parse_nonnegative_float(weights_list[i]) if i < len(weights_list) else None
+
+            if exercise_name and sets_value and reps_value and weight_value is not None:
+                CustomLiftExercise.objects.create(
+                    workout=workout,
+                    exercise_name=exercise_name,
+                    default_sets=sets_value,
+                    default_reps=reps_value,
+                    default_weight=weight_value
+                )
+
+        messages.success(request, "Custom workout saved.")
+        return redirect('custom_workout_detail', workout_id=workout.id)
+
+    return render(request, 'tracker/custom_workout_builder.html')
+
+
+@login_required
+def custom_workout_detail(request, workout_id):
+    workout = CustomLiftWorkout.objects.filter(user=request.user, id=workout_id).prefetch_related('exercises').first()
+    if not workout:
+        messages.error(request, "Workout not found.")
+        return redirect('workouts')
+
+    exercise_cards = []
+    for exercise in workout.exercises.all():
+        last_log = LiftExerciseLog.objects.filter(
+            user=request.user,
+            exercise=exercise
+        ).order_by('-date', '-id').first()
+
+        exercise_cards.append({
+            'exercise': exercise,
+            'last_log': last_log,
+        })
+
+    return render(request, 'tracker/custom_workout_detail.html', {
+        'workout': workout,
+        'exercise_cards': exercise_cards,
+    })
+
+
+@login_required
+@require_POST
+def log_custom_workout(request, workout_id):
+    workout = CustomLiftWorkout.objects.filter(user=request.user, id=workout_id).prefetch_related('exercises').first()
+    if not workout:
+        messages.error(request, "Workout not found.")
+        return redirect('workouts')
+
+    for exercise in workout.exercises.all():
+        sets_value = _parse_positive_int(request.POST.get(f"sets_{exercise.id}"))
+        reps_value = _parse_positive_int(request.POST.get(f"reps_{exercise.id}"))
+        weight_value = _parse_nonnegative_float(request.POST.get(f"weight_{exercise.id}"))
+
+        if sets_value and reps_value and weight_value is not None:
+            LiftExerciseLog.objects.create(
+                user=request.user,
+                workout=workout,
+                exercise=exercise,
+                sets=sets_value,
+                reps=reps_value,
+                weight=weight_value,
+            )
+
+    WorkoutLog.objects.create(
+        user=request.user,
+        activity_name=workout.name,
+        duration=None,
+        distance=None,
+        color='#9b2915',
+    )
+
+    messages.success(request, "Workout saved.")
+    return redirect('stats')
 
 
 @login_required
