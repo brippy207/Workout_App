@@ -89,53 +89,50 @@ def nutrition(request):
     today = timezone.localdate()
     food_logs = FoodLog.objects.filter(user=request.user, date=today)
     return render(request, 'tracker/nutrition.html', {'food_logs': food_logs})
-
 @login_required
-@login_required
-def proxy_food_search(request):
+def api_food_search(request):
     query = request.GET.get('query', '').lower().strip()
     
-    # 1. THE "PRESENTATION SAVER" (Local Mock Data)
-    # If the user types these exact words, it won't even try the API
+    # Added "weight_per_unit" to each item so the JS slider has a number to multiply by!
     mock_db = {
         "apple": {
             "products": [{
                 "product_name": "red apple (fresh)",
-                "brands": "generic",
                 "image_front_small_url": "https://upload.wikimedia.org/wikipedia/commons/1/15/Red_Apple.jpg",
-                "nutriments": {"proteins_100g": 0.3, "carbohydrates_100g": 14, "fat_100g": 0.2}
+                "nutriments": {"proteins_100g": 0.3, "carbohydrates_100g": 14, "fat_100g": 0.2},
+                "weight_per_unit": 182
             }]
         },
         "chicken": {
             "products": [{
                 "product_name": "chicken breast (grilled)",
-                "brands": "poultry",
                 "image_front_small_url": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Grilled_Chicken_Breast.jpg",
-                "nutriments": {"proteins_100g": 31, "carbohydrates_100g": 0, "fat_100g": 3.6}
+                "nutriments": {"proteins_100g": 31, "carbohydrates_100g": 0, "fat_100g": 3.6},
+                "weight_per_unit": 150
             }]
         },
         "cheetos": {
             "products": [{
                 "product_name": "cheetos crunchy",
-                "brands": "frito lay",
                 "image_front_small_url": "https://upload.wikimedia.org/wikipedia/commons/d/de/Cheetos-Crunchy.jpg",
-                "nutriments": {"proteins_100g": 5.8, "carbohydrates_100g": 53.0, "fat_100g": 35.0}
+                "nutriments": {"proteins_100g": 5.8, "carbohydrates_100g": 53.0, "fat_100g": 35.0},
+                "weight_per_unit": 28
             }]
         },
         "oreo": {
             "products": [{
                 "product_name": "oreo double stuf",
-                "brands": "nabisco",
                 "image_front_small_url": "https://upload.wikimedia.org/wikipedia/commons/3/3e/Oreo-Two-Cookies.jpg",
-                "nutriments": {"proteins_100g": 3, "carbohydrates_100g": 68, "fat_100g": 21}
+                "nutriments": {"proteins_100g": 3, "carbohydrates_100g": 68, "fat_100g": 21},
+                "weight_per_unit": 11
             }]
         },
         "pizza": {
             "products": [{
                 "product_name": "pepperoni pizza",
-                "brands": "frozen/delivery",
                 "image_front_small_url": "https://upload.wikimedia.org/wikipedia/commons/a/a3/Eq_it-na_pizza-margherita_sep2005_sml.jpg",
-                "nutriments": {"proteins_100g": 12, "carbohydrates_100g": 26, "fat_100g": 10}
+                "nutriments": {"proteins_100g": 12, "carbohydrates_100g": 26, "fat_100g": 10},
+                "weight_per_unit": 300
             }]
         }
     }
@@ -143,16 +140,19 @@ def proxy_food_search(request):
     if query in mock_db:
         return JsonResponse(mock_db[query])
 
-    # 2. THE REAL API CALL (If not in mock_db)
+    # Fallback to Real API
     url = f"https://world.openfoodfacts.org/cgi/search.pl?search_terms={query}&search_simple=1&action=process&json=1&page_size=20&fields=product_name,nutriments,image_front_small_url,brands"
     headers = {'User-Agent': 'MyRetroApp/1.0'}
 
     try:
         response = requests.get(url, headers=headers, timeout=5)
-        response.raise_for_status()
-        return JsonResponse(response.json())
+        data = response.json()
+        # We need to inject a default weight for API items so they don't NaN out
+        for p in data.get('products', []):
+            if 'weight_per_unit' not in p:
+                p['weight_per_unit'] = 100 
+        return JsonResponse(data)
     except:
-        # 3. THE FAIL-SAFE: If the API is 503/Down, return an empty list instead of a crash
         return JsonResponse({"products": []})
 
 @login_required
@@ -424,42 +424,3 @@ def log_food(request):
     messages.success(request, success_message)
     return redirect('nutrition')
 
-
-@login_required
-@require_POST
-def search_food(request):
-    """Proxy endpoint that forwards search queries to the USDA FDC API.
-    Keeps the API key on the server and caches results for 30 minutes.
-    """
-    try:
-        payload = json.loads(request.body.decode() or "{}")
-        query = (payload.get('query') or "").strip()
-        if not query:
-            return JsonResponse({'foods': []})
-
-        cache_key = f"usda_search:{query.lower()}"
-        cached = cache.get(cache_key)
-        if cached:
-            return JsonResponse({'foods': cached})
-
-        url = 'https://api.nal.usda.gov/fdc/v1/foods/search'
-        params = {'api_key': getattr(settings, 'USDA_API_KEY', ''), 'query': query}
-        r = requests.get(url, params=params, timeout=8)
-        r.raise_for_status()
-        data = r.json()
-
-        foods = []
-        for f in data.get('foods', [])[:25]:
-            foods.append({
-                'description': f.get('description'),
-                'foodNutrients': [
-                    {'nutrientName': n.get('nutrientName'), 'value': n.get('value')}
-                    for n in f.get('foodNutrients', [])
-                ],
-                'servingsPerContainer': f.get('servingsPerContainer')
-            })
-
-        cache.set(cache_key, foods, 60 * 30)  # cache 30 minutes
-        return JsonResponse({'foods': foods})
-    except (json.JSONDecodeError, requests.RequestException, ValueError, DatabaseError):
-        return JsonResponse({'foods': []}, status=500)
