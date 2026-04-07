@@ -1,142 +1,220 @@
 {% extends "base.html" %}
 {% load static %}
+{% block content %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'tracker/css/grid_layout.css' %}">
 <style>
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(240px, 1fr));
+    gap: 24px;
+    max-width: 1100px;
+    margin: 30px auto;
+  }
+
+  .category-box {
+    background: var(--soft-white);
+    border: 3px solid var(--wood);
+    color: var(--wood);
+    min-height: 150px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border-radius: 28px;
+    font-size: 2rem;
+    font-weight: 700;
+    box-shadow: 10px 10px 0 var(--mustard);
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .category-box:hover {
+    transform: translateY(-2px);
+  }
+
+  .saved-box {
+    flex-direction: column;
+    gap: 14px;
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+  }
+
+  .saved-box-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .saved-workout-link {
+    display: inline-block;
+    text-decoration: none;
+    color: var(--wood);
+    background: var(--cream);
+    border: 2px solid var(--wood);
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-size: 1rem;
+    font-weight: 700;
+    box-shadow: 5px 5px 0 var(--mustard);
+  }
+
+  .saved-workout-link:hover {
+    background: var(--mustard);
+    color: white;
+  }
+
+  .saved-empty {
+    font-size: 1rem;
+    font-weight: 500;
+  }
+
   .modal-backdrop {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(244, 238, 224, 0.78);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.25);
     z-index: 999;
   }
 
   .modal-card {
     display: none;
     position: fixed;
+    z-index: 1000;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+    width: min(92vw, 420px);
     background: var(--cream);
     border: 2px solid var(--burnt-orange);
+    border-radius: 22px;
+    box-shadow: 12px 12px 0 var(--mustard);
     padding: 24px;
-    z-index: 1000;
+  }
+
+  .modal-card label {
+    display: block;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    font-weight: 700;
     color: var(--wood);
-    width: min(92vw, 360px);
-    border-radius: 16px;
-    box-shadow: 10px 10px 0 var(--mustard);
   }
 
   .modal-card input {
     width: 100%;
-    padding: 10px 12px;
-    margin-top: 6px;
+    padding: 12px;
+    border-radius: 12px;
     border: 2px solid var(--wood);
-    border-radius: 10px;
     background: var(--soft-white);
     box-sizing: border-box;
-    color: var(--wood);
   }
 
   .modal-actions {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     margin-top: 18px;
-    align-items: center;
   }
 
-  .modal-button {
-    flex: 1;
+  .pill-btn {
     border: 2px solid var(--wood);
     background: var(--soft-white);
     color: var(--wood);
     border-radius: 999px;
-    padding: 12px 16px;
+    padding: 12px 18px;
     font-weight: 700;
     cursor: pointer;
     box-shadow: 6px 6px 0 var(--mustard);
   }
 
-  .modal-button:hover {
-    background: var(--mustard);
-    color: white;
+  @media (max-width: 950px) {
+    .grid-container {
+      grid-template-columns: repeat(2, minmax(240px, 1fr));
+    }
   }
 
-  .modal-cancel {
-    background: transparent;
-    border: none;
-    text-decoration: underline;
-    cursor: pointer;
-    color: var(--wood);
-    font-weight: 600;
+  @media (max-width: 640px) {
+    .grid-container {
+      grid-template-columns: 1fr;
+    }
   }
 </style>
-{% endblock %}
 
-{% block content %}
-<h2 style="margin-top: 30px;">{{ category_name|title }}</h2>
+<h2 style="text-align:center; margin-top: 24px;">{{ category_name|title }}</h2>
 
 <div class="grid-container">
   {% for item in sub_categories %}
-    {% if category_name == 'cardio' %}
-      <div class="category-box" onclick="showLogBox('{{ item }}')" style="cursor: pointer;">
-        {{ item }}
-      </div>
+    {% if category_name == 'cardio' or category_name == 'sports' or category_name == 'stretching' %}
+      <div class="category-box" onclick="openActivityModal('{{ item }}')">{{ item }}</div>
     {% else %}
-      <a href="{% url 'workout_setup' item %}" class="category-box">
-        {{ item }}
-      </a>
+      <a href="{% url 'workout_setup' item %}" class="category-box">{{ item }}</a>
     {% endif %}
   {% endfor %}
+
+  {% if category_name == 'lifting' %}
+    <div class="category-box saved-box">
+      <div class="saved-box-title">Saved Workouts</div>
+
+      {% if custom_workouts %}
+        {% for workout in custom_workouts %}
+          <a href="{% url 'custom_workout_detail' workout.id %}" class="saved-workout-link">
+            {{ workout.name }}
+          </a>
+        {% endfor %}
+      {% else %}
+        <div class="saved-empty">No saved workouts yet</div>
+      {% endif %}
+    </div>
+  {% endif %}
 </div>
 
-<div id="modalBackdrop" class="modal-backdrop" onclick="hideLogBox()"></div>
+<div id="activityBackdrop" class="modal-backdrop" onclick="closeActivityModal()"></div>
 
-<div id="logBox" class="modal-card">
-  <h3 id="logTitle" style="margin-top: 0;">Log Activity</h3>
+<div id="activityModal" class="modal-card">
+  <h3 id="activityTitle" style="margin-top:0;">Log Activity</h3>
 
-  <form action="{% url 'log_workout' %}" method="POST">
+  <form method="POST" action="{% url 'log_workout' %}">
     {% csrf_token %}
-    <input type="hidden" name="activity" id="logActivityName">
+    <input type="hidden" name="activity" id="activityName">
 
-    <div style="margin-bottom: 14px;">
-      <label style="font-weight: 700;">Distance (miles)</label>
-      <input type="number" step="0.1" min="0" name="distance">
+    <div id="distanceWrap">
+      <label for="distanceInput">Distance (miles)</label>
+      <input type="number" step="0.1" min="0" name="distance" id="distanceInput">
     </div>
 
-    <div style="margin-bottom: 14px;">
-      <label style="font-weight: 700;">Duration (minutes)</label>
-      <input type="number" min="1" name="duration">
-    </div>
+    <label for="durationInput">Duration (minutes)</label>
+    <input type="number" min="1" name="duration" id="durationInput" required>
 
     <div class="modal-actions">
-      <button type="submit" class="modal-button">Log to Calendar</button>
-      <button type="button" class="modal-cancel" onclick="hideLogBox()">Cancel</button>
+      <button type="submit" class="pill-btn">Save</button>
+      <button type="button" class="pill-btn" onclick="closeActivityModal()">Cancel</button>
     </div>
   </form>
 </div>
 
 <script>
-  function showLogBox(activityName) {
-    document.getElementById('logTitle').textContent = 'Log ' + activityName;
-    document.getElementById('logActivityName').value = activityName;
-    document.getElementById('modalBackdrop').style.display = 'block';
-    document.getElementById('logBox').style.display = 'block';
+  function openActivityModal(activityName) {
+    document.getElementById('activityTitle').textContent = 'Log ' + activityName;
+    document.getElementById('activityName').value = activityName;
+
+    const distanceWrap = document.getElementById('distanceWrap');
+    if (['Running', 'Rowing', 'Cycling', 'Swimming', 'Elliptical'].includes(activityName)) {
+      distanceWrap.style.display = 'block';
+    } else {
+      distanceWrap.style.display = 'none';
+      document.getElementById('distanceInput').value = '';
+    }
+
+    document.getElementById('activityBackdrop').style.display = 'block';
+    document.getElementById('activityModal').style.display = 'block';
     document.body.style.overflow = 'hidden';
   }
 
-  function hideLogBox() {
-    document.getElementById('modalBackdrop').style.display = 'none';
-    document.getElementById('logBox').style.display = 'none';
+  function closeActivityModal() {
+    document.getElementById('activityBackdrop').style.display = 'none';
+    document.getElementById('activityModal').style.display = 'none';
     document.body.style.overflow = '';
   }
-
-  document.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape') {
-      hideLogBox();
-    }
-  });
 </script>
+
 {% endblock %}

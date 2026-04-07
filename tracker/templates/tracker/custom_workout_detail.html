@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .detail-shell {
+    max-width: 920px;
+    margin: 30px auto;
+    padding: 20px;
+  }
+
+  .exercise-row {
+    background: var(--soft-white);
+    border: 2px solid var(--wood);
+    border-radius: 24px;
+    box-shadow: 10px 10px 0 var(--mustard);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .exercise-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .exercise-row input {
+    width: 100%;
+    padding: 10px 12px;
+    margin-top: 6px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    border: 2px solid var(--wood);
+    box-sizing: border-box;
+  }
+
+  .save-btn {
+    display: inline-block;
+    border: 2px solid var(--wood);
+    background: var(--soft-white);
+    color: var(--wood);
+    border-radius: 999px;
+    padding: 14px 24px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 6px 6px 0 var(--mustard);
+  }
+</style>
+
+<div class="detail-shell">
+  <h2 style="text-align:center;">Saved Workout</h2>
+  <h3 style="text-align:center; margin-bottom: 30px;">{{ workout.name }}</h3>
+
+  <form method="POST" action="{% url 'log_custom_workout' workout.id %}">
+    {% csrf_token %}
+
+    {% for card in exercise_cards %}
+      <div class="exercise-row">
+        <h3>{{ card.exercise.exercise_name }}</h3>
+
+        <div class="exercise-grid">
+          <div>
+            <h4>Last Time</h4>
+            {% if card.last_log %}
+              <p><strong>Sets:</strong> {{ card.last_log.sets }}</p>
+              <p><strong>Reps:</strong> {{ card.last_log.reps }}</p>
+              <p><strong>Weight:</strong> {{ card.last_log.weight }}</p>
+            {% else %}
+              <p>No previous entry.</p>
+            {% endif %}
+          </div>
+
+          <div>
+            <h4>This Time</h4>
+            <label>Sets</label>
+            <input type="number" min="1" name="sets_{{ card.exercise.id }}" value="{{ card.exercise.default_sets }}">
+
+            <label>Reps</label>
+            <input type="number" min="1" name="reps_{{ card.exercise.id }}" value="{{ card.exercise.default_reps }}">
+
+            <label>Weight</label>
+            <input type="number" min="0" step="0.1" name="weight_{{ card.exercise.id }}" value="{{ card.exercise.default_weight }}">
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+
+    <div style="text-align:center;">
+      <button type="submit" class="save-btn">Save</button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

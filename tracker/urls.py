@@ -11,6 +11,6 @@ urlpatterns = [
     path('signup/', views.signup, name='signup'),
     path('log-workout/', views.log_workout, name='log_workout'),
     path('log-weight/', views.log_weight, name='log_weight'),
-    path('log-food/', views.log_food, name='log_food'), # This one is POST
-    path('api/search-food/', views.proxy_food_search, name='proxy_search'), # This one is GET
+    path('log-food/', views.log_food, name='log_food'),
+    path('api/search-food/', views.search_food, name='search_food'),
 ]

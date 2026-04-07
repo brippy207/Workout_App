@@ -1,24 +1,149 @@
 {% extends "base.html" %}
-
 {% block content %}
-<div class="setup-container" style="margin-top: 50px; text-align: center;">
-    <h2>{{ workout_name|title }} Setup</h2>
-    <p class="description">Where are you training today?</p>
-    
-    <form style="margin-top: 20px;">
-        <select name="gym_setup" style="padding: 15px; border-radius: 10px; border: 2px solid var(--wood); font-family: 'Courier New', monospace; width: 300px;">
-            <option value="" disabled selected>Pick your gym setup</option>
-            <option value="no_equip">No Equipment (Bodyweight)</option>
-            <option value="home_gym">Home Gym / Dumbbells</option>
-            <option value="commercial">General Commercial Gym</option>
-            <option value="pf">Planet Fitness</option>
-            <option value="crunch">Crunch Fitness</option>
-            <option value="lifetime">Life Time Fitness</option>
-        </select>
-        <br><br>
-        <button type="submit" class="category-box" style="height: 60px; width: 200px; cursor: pointer; border: 2px solid var(--wood);">
-            Start Workout
-        </button>
+
+<style>
+  .setup-shell {
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .setup-shell h2 {
+    color: var(--wood);
+    margin-bottom: 10px;
+  }
+
+  .setup-shell p {
+    color: var(--wood);
+    margin-bottom: 28px;
+  }
+
+  .choice-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(240px, 1fr));
+    gap: 24px;
+    align-items: stretch;
+  }
+
+  .choice-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    background: var(--soft-white);
+    border: 3px solid var(--wood);
+    color: var(--wood);
+    padding: 40px 24px;
+    border-radius: 28px;
+    font-size: 1.7rem;
+    font-weight: 700;
+    box-shadow: 10px 10px 0 var(--mustard);
+    min-height: 210px;
+    cursor: pointer;
+  }
+
+  .saved-card {
+    background: rgba(255,255,255,0.18);
+    border: 2px solid rgba(155, 41, 21, 0.25);
+    border-radius: 24px;
+    padding: 24px;
+    min-height: 210px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .saved-card h3 {
+    margin-top: 0;
+    margin-bottom: 18px;
+    color: var(--wood);
+    font-size: 1.8rem;
+  }
+
+  .saved-workouts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .saved-workout-link {
+    display: inline-block;
+    text-decoration: none;
+    color: var(--wood);
+    background: var(--soft-white);
+    border: 2px solid var(--wood);
+    border-radius: 999px;
+    padding: 12px 20px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    box-shadow: 6px 6px 0 var(--mustard);
+  }
+
+  .saved-workout-link:hover {
+    background: var(--mustard);
+    color: white;
+  }
+
+  .saved-empty {
+    color: var(--wood);
+    font-weight: 600;
+  }
+
+  .gym-wrap {
+    margin-top: 35px;
+    padding: 24px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 22px;
+    border: 2px solid rgba(155, 41, 21, 0.25);
+    display: none;
+  }
+
+  .gym-wrap select,
+  .gym-wrap button {
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 2px solid var(--wood);
+    margin: 10px;
+  }
+
+  @media (max-width: 950px) {
+    .choice-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="setup-shell">
+  <h2>{{ workout_name|title }}</h2>
+  <p>Choose how you want to start.</p>
+
+  <div class="choice-grid">
+    <div class="choice-card" onclick="showPremade()">Premade Lift</div>
+
+    <a href="{% url 'create_custom_workout' %}" class="choice-card">
+      Make Your Own Workout
+    </a>
+  </div>
+
+  <div id="premadeSection" class="gym-wrap">
+    <h3>Pick your gym setup</h3>
+    <form method="GET" action="#">
+      <select name="gym_option">
+        {% for option in gym_options %}
+          <option value="{{ option }}">{{ option }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit">Start Workout</button>
     </form>
+  </div>
 </div>
+
+<script>
+  function showPremade() {
+    document.getElementById('premadeSection').style.display = 'block';
+  }
+</script>
+
 {% endblock %}
