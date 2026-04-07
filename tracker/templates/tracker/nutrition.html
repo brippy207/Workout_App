@@ -241,6 +241,15 @@
         transition: background 0.15s;
     }
 
+    .result-item img {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border: 2px solid var(--wood);
+        border-radius: 4px;
+        background-color: white; 
+    }
+
     .result-item:hover {
         background: var(--mustard);
         color: white;
@@ -375,7 +384,7 @@
             <div class="search-status" id="search-status"></div>
             <div id="search-results"></div>
             <div id="serving-slider-section">
-                <div class="slider-header"><label>how much did you eat?</label><span class="value-badge"><span id="serving-pct-display">100</span>%</span></div>
+                <div class="slider-header"><label>how much did you eat?</label><span class="value-badge" id="serving-pct-display">100%</span></div>
                 <input type="range" id="serving-pct-slider" min="1" max="100" value="100" class="retro-slider" oninput="updateAutoPreview()">
             </div>
             <div id="whole-items-section">
@@ -408,179 +417,186 @@
         </div>
     </div>
 </div>
-
 <script>
-    // ── Initialize Totals from Database ──────────────────────────────────────────
+    // 1. Global Memory
+    let selectedProduct = null;
     let currentP = 0; let currentC = 0; let currentF = 0;
+
     {% for log in food_logs %}
-        currentP += parseFloat("{{ log.protein }}");
-        currentC += parseFloat("{{ log.carbs }}");
-    currentF += parseFloat("{{ log.fats }}");
-{% endfor %}
+        currentP += parseFloat("{{ log.protein }}") || 0;
+        currentC += parseFloat("{{ log.carbs }}") || 0;
+        currentF += parseFloat("{{ log.fats }}") || 0;
+    {% endfor %}
 
-let selectedProduct = null;
+    // 2. Search
+    async function searchFood() {
+        const query = document.getElementById('auto-search-input').value.trim();
+        const statusEl = document.getElementById('search-status');
+        const resultsEl = document.getElementById('search-results');
 
-// ── Shared Database Helper ──────────────────────────────────────────────────
-async function saveToDB(name, p, c, f) {
-    const formData = new FormData();
-    formData.append('food_name', name);
-    formData.append('protein', p);
-    formData.append('carbs', c);
-    formData.append('fats', f);
-    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        if (!query) return;
+        statusEl.textContent = 'dialing the database...';
 
-    try {
-        await fetch("{% url 'log_food' %}", {
-            method: "POST",
-            body: formData,
-            headers: { "X-Requested-With": "XMLHttpRequest" }
-        });
-    } catch (e) { console.error("Save failed", e); }
-}
+        try {
+            const url = `/tracker/api/search-food/?query=${encodeURIComponent(query)}`;
+            const res = await fetch(url);
+            const data = await res.json();
 
-// ── UI Updates ──────────────────────────────────────────────────────────────
-function updateBars() {
-    const gP = parseInt(document.getElementById('goal-p').value);
-    const gC = parseInt(document.getElementById('goal-c').value);
-    const gF = parseInt(document.getElementById('goal-f').value);
+            if (!data.products || data.products.length === 0) {
+                statusEl.textContent = 'item not found.';
+                return;
+            }
 
-    document.getElementById('val-p').innerText = gP;
-    document.getElementById('val-c').innerText = gC;
-    document.getElementById('val-f').innerText = gF;
+            statusEl.textContent = 'results:';
+            resultsEl.innerHTML = '';
+            resultsEl.style.display = 'flex';
 
-    const totalGoalCal = (gP * 4) + (gC * 4) + (gF * 9);
-    document.getElementById('goal-cal-display').innerText = totalGoalCal;
+            data.products.forEach(product => {
+                const div = document.createElement('div');
+                div.className = 'result-item';
+                div.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${product.image_front_small_url}" style="width:45px; height:45px; object-fit:cover; border-radius:4px;">
+                        <div class="result-name">${product.product_name.toLowerCase()}</div>
+                    </div>
+                `;
+                div.onclick = () => selectProductFromOFF(product, div);
+                resultsEl.appendChild(div);
+            });
+        } catch (err) {
+            statusEl.textContent = 'search failed.';
+        }
+    }
 
-    const currentCal = (currentP * 4) + (currentC * 4) + (currentF * 9);
+    // 3. Selection
+    function selectProductFromOFF(product, itemEl) {
+        document.querySelectorAll('.result-item').forEach(el => el.classList.remove('selected'));
+        itemEl.classList.add('selected');
 
-    document.getElementById('cal-text').innerText = `${Math.round(currentCal)} / ${totalGoalCal} kcal`;
-    document.getElementById('p-text').innerText   = `${Math.round(currentP)} / ${gP}g`;
-    document.getElementById('c-text').innerText   = `${Math.round(currentC)} / ${gC}g`;
-    document.getElementById('f-text').innerText   = `${Math.round(currentF)} / ${gF}g`;
-
-    const getWidth = (curr, goal) => (goal > 0) ? Math.min((curr / goal) * 100, 100) : 0;
-    document.getElementById('cal-bar').style.width = getWidth(currentCal, totalGoalCal) + '%';
-    document.getElementById('p-bar').style.width   = getWidth(currentP, gP) + '%';
-    document.getElementById('c-bar').style.width   = getWidth(currentC, gC) + '%';
-    document.getElementById('f-bar').style.width   = getWidth(currentF, gF) + '%';
-}
-
-window.onload = updateBars;
-
-function switchMode(mode) {
-    document.getElementById('manual-panel').style.display = (mode === 'manual') ? 'block' : 'none';
-    document.getElementById('auto-panel').style.display   = (mode === 'auto') ? 'block' : 'none';
-    document.getElementById('btn-manual').className = (mode === 'manual') ? 'active' : '';
-    document.getElementById('btn-auto').className   = (mode === 'auto') ? 'active' : '';
-}
-
-// ── Manual Add ──────────────────────────────────────────────────────────────
-function addFood() {
-    const nameVal = document.getElementById('food-name').value.trim();
-    const s = parseFloat(document.getElementById('add-s').value);
-    const p = parseFloat(document.getElementById('add-p').value);
-    const c = parseFloat(document.getElementById('add-c').value);
-    const f = parseFloat(document.getElementById('add-f').value);
-
-    if (!nameVal || isNaN(s) || isNaN(p) || isNaN(c) || isNaN(f)) return alert("Fill all fields");
-
-    const totalP = p * s; const totalC = c * s; const totalF = f * s;
-    currentP += totalP; currentC += totalC; currentF += totalF;
-    
-    updateBars();
-    pushLogUI(`${nameVal.toLowerCase()} (${s} servings)`, totalP, totalC, totalF);
-    saveToDB(nameVal, totalP, totalC, totalF);
-
-    ['food-name','add-s','add-p','add-c','add-f'].forEach(id => document.getElementById(id).value = '');
-}
-
-// ── USDA Search & Auto Logic ────────────────────────────────────────────────
-async function searchFood() {
-    const query = document.getElementById('auto-search-input').value.trim();
-    if (!query) return;
-    const status = document.getElementById('search-status');
-    const results = document.getElementById('search-results');
-    status.textContent = 'searching...'; results.innerHTML = '';
-
-    try {
-        const url = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(query)}&api_key=akLwE4dqwk2WtzARAastgkHeM09q1QeDgI4lZK2J`;
-        const res = await fetch(url); const data = await res.json();
-        const products = (data.foods || []).filter(p => p.foodNutrients.some(n => n.nutrientName === 'Protein'));
+        const n = product.nutriments;
+        let unitWeight = 100;
+        const name = product.product_name.toLowerCase();
         
-        if (products.length === 0) { status.textContent = 'no results found.'; return; }
-        status.textContent = `${products.length} results found — pick one:`;
-        results.style.display = 'flex';
+        if (name.includes('apple')) unitWeight = 182;
+        if (name.includes('cheetos')) unitWeight = 28;
+        if (name.includes('oreo')) unitWeight = 11;
+        if (name.includes('chicken')) unitWeight = 150;
 
-        products.forEach(p => {
-            const macros = macrosFullPackage(p);
-            const item = document.createElement('div');
-            item.className = 'result-item';
-            item.innerHTML = `<div class="result-name">${p.description.toLowerCase()}</div><div class="result-meta">p: ${macros.p}g c: ${macros.c}g f: ${macros.f}g</div>`;
-            item.onclick = () => {
-                document.querySelectorAll('.result-item').forEach(el => el.classList.remove('selected'));
-                item.classList.add('selected');
-                selectedProduct = p;
-                document.getElementById('serving-slider-section').style.display = 'block';
-                document.getElementById('whole-items-section').style.display = 'flex';
-                updateAutoPreview();
-            };
-            results.appendChild(item);
-        });
-    } catch (e) { status.textContent = 'search failed.'; }
-}
+        selectedProduct = {
+            description: product.product_name,
+            p_100: parseFloat(n.proteins_100g) || 0,
+            c_100: parseFloat(n.carbohydrates_100g) || 0,
+            f_100: parseFloat(n.fat_100g) || 0,
+            weight_per_unit: unitWeight
+        };
 
-function macrosPerServing(nutrients) {
-    const find = (n) => { const m = nutrients.find(x => x.nutrientName === n); return m ? Math.round(m.value*10)/10 : 0; };
-    return { p: find('Protein'), c: find('Carbohydrate, by difference'), f: find('Total lipid (fat)') };
-}
+        document.getElementById('serving-slider-section').style.display = 'block';
+        document.getElementById('whole-items-section').style.display = 'flex';
+        document.getElementById('auto-preview').style.display = 'block';
+        updateAutoPreview();
+    }
 
-function macrosFullPackage(product) {
-    const base = macrosPerServing(product.foodNutrients);
-    const spc = parseFloat(product.servingsPerContainer);
-    const valid = !isNaN(spc) && spc > 0;
-    return { p: valid ? Math.round(base.p*spc*10)/10 : base.p, c: valid ? Math.round(base.c*spc*10)/10 : base.c, f: valid ? Math.round(base.f*spc*10)/10 : base.f, warned: !valid };
-}
+    // 4. Preview
+    function updateAutoPreview() {
+        if (!selectedProduct) return;
 
-function updateAutoPreview() {
-    if (!selectedProduct) return;
-    const pct = parseInt(document.getElementById('serving-pct-slider').value);
-    document.getElementById('serving-pct-display').textContent = pct;
-    const whole = parseFloat(document.getElementById('whole-items-input').value);
-    const scale = (!isNaN(whole) && whole > 0) ? whole : pct/100;
-    const base = macrosFullPackage(selectedProduct);
-    const p = Math.round(base.p*scale*10)/10; const c = Math.round(base.c*scale*10)/10; const f = Math.round(base.f*scale*10)/10;
-    const preview = document.getElementById('auto-preview');
-    preview.style.display = 'block';
-    preview.innerHTML = `<strong>${selectedProduct.description.toLowerCase()}</strong><br>p: ${p}g | c: ${c}g | f: ${f}g`;
-}
+        const quantity = parseFloat(document.getElementById('whole-items-input').value) || 0;
+        const sliderVal = parseFloat(document.getElementById('serving-pct-slider').value) || 100;
+        
+        let totalGrams = (quantity > 0) ? (quantity * selectedProduct.weight_per_unit) : ((sliderVal / 100) * selectedProduct.weight_per_unit);
+        
+        document.getElementById('serving-pct-display').textContent = (quantity > 0) ? `${quantity} items (${Math.round(totalGrams)}g)` : `${sliderVal}% (${Math.round(totalGrams)}g)`;
 
-function addAutoFood() {
-    if (!selectedProduct) return alert("select a food");
-    const pct = parseInt(document.getElementById('serving-pct-slider').value);
-    const whole = parseFloat(document.getElementById('whole-items-input').value);
-    const scale = (!isNaN(whole) && whole > 0) ? whole : pct/100;
-    const base = macrosFullPackage(selectedProduct);
-    const p = base.p*scale; const c = base.c*scale; const f = base.f*scale;
-    
-    currentP += p; currentC += c; currentF += f;
-    updateBars();
-    pushLogUI(selectedProduct.description.toLowerCase(), p, c, f);
-    saveToDB(selectedProduct.description, p, c, f);
+        const ratio = totalGrams / 100;
+        const p = (selectedProduct.p_100 * ratio).toFixed(1);
+        const c = (selectedProduct.c_100 * ratio).toFixed(1);
+        const f = (selectedProduct.f_100 * ratio).toFixed(1);
+        const cal = Math.round((p * 4) + (c * 4) + (f * 9));
 
-    selectedProduct = null;
-    document.getElementById('auto-search-input').value = '';
-    document.getElementById('search-results').style.display = 'none';
-    document.getElementById('auto-preview').style.display = 'none';
-}
+        document.getElementById('auto-preview').innerHTML = `
+            <strong>preview:</strong> ${p}g p | ${c}g c | ${f}g f | <strong>${cal} kcal</strong>
+        `;
+    }
 
-function pushLogUI(label, p, c, f) {
-    const logList = document.getElementById('food-log-list');
-    const empty = document.getElementById('empty-log-msg');
-    if (empty) empty.remove();
-    const entry = document.createElement('div');
-    entry.className = 'log-entry';
-    entry.innerHTML = `<span>${label}</span><span>${Math.round(p)}g</span><span>${Math.round(c)}g</span><span>${Math.round(f)}g</span>`;
-    logList.prepend(entry);
-}
+    // 5. Add to Log
+    async function addAutoFood() {
+        if (!selectedProduct) return alert("Select a food first!");
+        const qty = parseFloat(document.getElementById('whole-items-input').value) || 0;
+        const sld = parseFloat(document.getElementById('serving-pct-slider').value) || 100;
+        let grams = (qty > 0) ? (qty * selectedProduct.weight_per_unit) : ((sld / 100) * selectedProduct.weight_per_unit);
+        
+        const r = grams / 100;
+        const p = parseFloat((selectedProduct.p_100 * r).toFixed(1));
+        const c = parseFloat((selectedProduct.c_100 * r).toFixed(1));
+        const f = parseFloat((selectedProduct.f_100 * r).toFixed(1));
+
+        currentP += p; currentC += c; currentF += f;
+        updateBars();
+        
+        const label = `${selectedProduct.description} (${Math.round(grams)}g)`;
+        pushLogUI(label, p, c, f);
+        
+        const formData = new FormData();
+        formData.append('food_name', label);
+        formData.append('protein', p);
+        formData.append('carbs', c);
+        formData.append('fats', f);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        await fetch("{% url 'log_food' %}", { method: "POST", body: formData });
+        
+        document.getElementById('whole-items-input').value = '';
+        document.getElementById('serving-pct-slider').value = 100;
+    }
+
+    function pushLogUI(label, p, c, f) {
+        const logList = document.getElementById('food-log-list');
+        const empty = document.getElementById('empty-log-msg');
+        if (empty) empty.remove();
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerHTML = `<span>${label}</span><span>${Math.round(p)}g</span><span>${Math.round(c)}g</span><span>${Math.round(f)}g</span>`;
+        logList.prepend(entry);
+    }
+
+    function updateBars() {
+        const gP = parseInt(document.getElementById('goal-p').value);
+        const gC = parseInt(document.getElementById('goal-c').value);
+        const gF = parseInt(document.getElementById('goal-f').value);
+        const totalGoalCal = (gP * 4) + (gC * 4) + (gF * 9);
+        const currentCal = (currentP * 4) + (currentC * 4) + (currentF * 9);
+
+        document.getElementById('val-p').innerText = gP;
+        document.getElementById('val-c').innerText = gC;
+        document.getElementById('val-f').innerText = gF;
+        document.getElementById('goal-cal-display').innerText = totalGoalCal;
+        document.getElementById('cal-text').innerText = `${Math.round(currentCal)} / ${totalGoalCal} kcal`;
+        document.getElementById('p-text').innerText = `${Math.round(currentP)} / ${gP}g`;
+        document.getElementById('c-text').innerText = `${Math.round(currentC)} / ${gC}g`;
+        document.getElementById('f-text').innerText = `${Math.round(currentF)} / ${gF}g`;
+
+        const getW = (curr, goal) => (goal > 0) ? Math.min((curr / goal) * 100, 100) : 0;
+        document.getElementById('cal-bar').style.width = getW(currentCal, totalGoalCal) + '%';
+        document.getElementById('p-bar').style.width = getW(currentP, gP) + '%';
+        document.getElementById('c-bar').style.width = getW(currentC, gC) + '%';
+        document.getElementById('f-bar').style.width = getW(currentF, gF) + '%';
+    }
+
+    // THE COLOR FIX IS HERE
+    function switchMode(mode) {
+        document.getElementById('manual-panel').style.display = (mode === 'manual') ? 'block' : 'none';
+        document.getElementById('auto-panel').style.display = (mode === 'auto') ? 'block' : 'none';
+        
+        // This handles the color change
+        document.getElementById('btn-manual').className = (mode === 'manual') ? 'active' : '';
+        document.getElementById('btn-auto').className = (mode === 'auto') ? 'active' : '';
+    }
+
+    document.getElementById('whole-items-input').addEventListener('input', () => {
+        document.getElementById('serving-pct-slider').value = 100;
+        updateAutoPreview();
+    });
+
+    document.getElementById('serving-pct-slider').addEventListener('input', updateAutoPreview);
+    window.onload = updateBars;
 </script>
 {% endblock %}

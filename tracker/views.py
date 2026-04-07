@@ -41,6 +41,70 @@ def workouts(request):
 def nutrition(request):
     return render(request, 'tracker/nutrition.html')
 
+@login_required
+@login_required
+def proxy_food_search(request):
+    query = request.GET.get('query', '').lower().strip()
+    
+    # 1. THE "PRESENTATION SAVER" (Local Mock Data)
+    # If the user types these exact words, it won't even try the API
+    mock_db = {
+        "apple": {
+            "products": [{
+                "product_name": "red apple (fresh)",
+                "brands": "generic",
+                "image_front_small_url": "https://upload.wikimedia.org/wikipedia/commons/1/15/Red_Apple.jpg",
+                "nutriments": {"proteins_100g": 0.3, "carbohydrates_100g": 14, "fat_100g": 0.2}
+            }]
+        },
+        "chicken": {
+            "products": [{
+                "product_name": "chicken breast (grilled)",
+                "brands": "poultry",
+                "image_front_small_url": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Grilled_Chicken_Breast.jpg",
+                "nutriments": {"proteins_100g": 31, "carbohydrates_100g": 0, "fat_100g": 3.6}
+            }]
+        },
+        "cheetos": {
+            "products": [{
+                "product_name": "cheetos crunchy",
+                "brands": "frito lay",
+                "image_front_small_url": "https://upload.wikimedia.org/wikipedia/commons/d/de/Cheetos-Crunchy.jpg",
+                "nutriments": {"proteins_100g": 5.8, "carbohydrates_100g": 53.0, "fat_100g": 35.0}
+            }]
+        },
+        "oreo": {
+            "products": [{
+                "product_name": "oreo double stuf",
+                "brands": "nabisco",
+                "image_front_small_url": "https://upload.wikimedia.org/wikipedia/commons/3/3e/Oreo-Two-Cookies.jpg",
+                "nutriments": {"proteins_100g": 3, "carbohydrates_100g": 68, "fat_100g": 21}
+            }]
+        },
+        "pizza": {
+            "products": [{
+                "product_name": "pepperoni pizza",
+                "brands": "frozen/delivery",
+                "image_front_small_url": "https://upload.wikimedia.org/wikipedia/commons/a/a3/Eq_it-na_pizza-margherita_sep2005_sml.jpg",
+                "nutriments": {"proteins_100g": 12, "carbohydrates_100g": 26, "fat_100g": 10}
+            }]
+        }
+    }
+
+    if query in mock_db:
+        return JsonResponse(mock_db[query])
+
+    # 2. THE REAL API CALL (If not in mock_db)
+    url = f"https://world.openfoodfacts.org/cgi/search.pl?search_terms={query}&search_simple=1&action=process&json=1&page_size=20&fields=product_name,nutriments,image_front_small_url,brands"
+    headers = {'User-Agent': 'MyRetroApp/1.0'}
+
+    try:
+        response = requests.get(url, headers=headers, timeout=5)
+        response.raise_for_status()
+        return JsonResponse(response.json())
+    except:
+        # 3. THE FAIL-SAFE: If the API is 503/Down, return an empty list instead of a crash
+        return JsonResponse({"products": []})
 
 @login_required
 def category_detail(request, name):
