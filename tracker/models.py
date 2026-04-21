@@ -82,4 +82,13 @@ class LiftExerciseLog(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.exercise.exercise_name} - {self.date}"
+    
+class UserGoal(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    protein_goal = models.IntegerField(default=150)
+    carb_goal = models.IntegerField(default=200)
+    fat_goal = models.IntegerField(default=70)
+
+    def __str__(self):
+        return f"{self.user.username}'s Goals"
 

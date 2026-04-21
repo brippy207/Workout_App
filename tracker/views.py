@@ -7,6 +7,7 @@ from django.db import DatabaseError
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
+from .models import FoodLog, UserGoal 
 
 from .forms import SignUpForm
 from .models import (
@@ -84,11 +85,33 @@ def workouts(request):
 
 @login_required
 def nutrition(request):
-    from .models import FoodLog
+    # This finds the goal in the DB. If it's not there, it creates it.
+    goal, created = UserGoal.objects.get_or_create(user=request.user)
+    
+    # If the user is new, 'created' will be True and goals will be 0.
+    # Let's ensure they have real numbers if they are new:
+    if created:
+        goal.protein_goal = 150
+        goal.carb_goal = 250
+        goal.fat_goal = 70
+        goal.save()
 
-    today = timezone.localdate()
-    food_logs = FoodLog.objects.filter(user=request.user, date=today)
-    return render(request, 'tracker/nutrition.html', {'food_logs': food_logs})
+    return render(request, 'tracker/nutrition.html', {'goal': goal})
+
+def nutrition_tracker(request):
+    # 1. Get the data
+    user_goal, created = UserGoal.objects.get_or_create(user=request.user)
+    logs = FoodLog.objects.filter(user=request.user).order_by('-id')
+
+    # 2. Put it in the box (context)
+    context = {
+        'goal': user_goal,  # This MUST match the 'goal' in {{ goal.protein_goal }}
+        'food_logs': logs,
+    }
+
+    # 3. Send the box to the template
+    return render(request, 'tracker/nutrition.html', context)
+
 @login_required
 def api_food_search(request):
     query = request.GET.get('query', '').lower().strip()
@@ -424,3 +447,21 @@ def log_food(request):
     messages.success(request, success_message)
     return redirect('nutrition')
 
+@login_required
+def update_goals(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        goal, _ = UserGoal.objects.get_or_create(user=request.user)
+        
+        # 1. Get the specific goal for THIS user
+        goal, created = UserGoal.objects.get_or_create(user=request.user)
+        
+        # 2. Assign the new values from the JS 'body'
+        goal.protein_goal = int(data.get('protein'))
+        goal.carb_goal = int(data.get('carbs'))
+        goal.fat_goal = int(data.get('fats'))
+        
+        # 3. CRITICAL: This is what makes it stay in the DB
+        goal.save() 
+        
+        return JsonResponse({'status': 'success'})
