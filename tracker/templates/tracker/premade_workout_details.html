@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load tracker_extras %}
+
+{% block content %}
+
+<h2>{{ workout.name }}</h2>
+<p>{{ workout.description }}</p>
+
+<form method="post" action="{% url 'save_premade_workout_progress' workout.slug %}">
+  {% csrf_token %}
+
+  {% for exercise in exercises %}
+    {% with prev=previous_lookup|get_item:exercise.id %}
+    <div class="exercise-card">
+      <h3>{{ exercise.order }}. {{ exercise.name }}</h3>
+      <p><strong>Prescription:</strong> {{ exercise.sets }} sets of {{ exercise.reps }}</p>
+      <p><strong>Rest:</strong> {{ exercise.rest_seconds }} sec</p>
+      <p>{{ exercise.notes }}</p>
+
+      {% if prev %}
+        <div class="previous-entry">
+          <strong>Previous workout:</strong><br>
+          Set 1: {{ prev.set_1_weight|default:"-" }} x {{ prev.set_1_reps|default:"-" }}<br>
+          Set 2: {{ prev.set_2_weight|default:"-" }} x {{ prev.set_2_reps|default:"-" }}<br>
+          Set 3: {{ prev.set_3_weight|default:"-" }} x {{ prev.set_3_reps|default:"-" }}<br>
+          Set 4: {{ prev.set_4_weight|default:"-" }} x {{ prev.set_4_reps|default:"-" }}
+        </div>
+      {% endif %}
+
+      <div class="set-grid">
+        <input type="number" step="0.5" name="exercise_{{ exercise.id }}_set_1_weight" placeholder="Set 1 weight">
+        <input type="number" name="exercise_{{ exercise.id }}_set_1_reps" placeholder="Set 1 reps">
+
+        <input type="number" step="0.5" name="exercise_{{ exercise.id }}_set_2_weight" placeholder="Set 2 weight">
+        <input type="number" name="exercise_{{ exercise.id }}_set_2_reps" placeholder="Set 2 reps">
+
+        <input type="number" step="0.5" name="exercise_{{ exercise.id }}_set_3_weight" placeholder="Set 3 weight">
+        <input type="number" name="exercise_{{ exercise.id }}_set_3_reps" placeholder="Set 3 reps">
+
+        <input type="number" step="0.5" name="exercise_{{ exercise.id }}_set_4_weight" placeholder="Set 4 weight">
+        <input type="number" name="exercise_{{ exercise.id }}_set_4_reps" placeholder="Set 4 reps">
+      </div>
+
+      <textarea name="exercise_{{ exercise.id }}_notes" placeholder="Notes"></textarea>
+    </div>
+    {% endwith %}
+  {% endfor %}
+
+  <button type="submit">Save Workout</button>
+</form>
+{% endblock %}

@@ -8,6 +8,8 @@ urlpatterns = [
     path('nutrition/', views.nutrition, name='nutrition'),
     path('workouts/<str:name>/', views.category_detail, name='category'),
     path('workout/<str:workout_name>/', views.workout_setup, name='workout_setup'),
+    path('workout/<str:workout_name>/<str:gym_type>/', views.premade_workout_detail, name='premade_workout_detail'),
+    path('workout/save/<slug:workout_slug>/', views.save_premade_workout_progress, name='save_premade_workout_progress'),
     path('signup/', views.signup, name='signup'),
     path('log-workout/', views.log_workout, name='log_workout'),
     path('log-weight/', views.log_weight, name='log_weight'),
@@ -17,4 +19,6 @@ urlpatterns = [
     path('lifting/custom/<int:workout_id>/', views.custom_workout_detail, name='custom_workout_detail'),
     path('lifting/custom/<int:workout_id>/log/', views.log_custom_workout, name='log_custom_workout'),
     path('update_goals/', views.update_goals, name='update_goals'),
+    path('workout/<str:workout_name>/<str:gym_type>/data/', views.get_premade_workout, name='get_premade_workout'),
 ]
+

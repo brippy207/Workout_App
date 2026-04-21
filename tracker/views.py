@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -17,6 +17,9 @@ from .models import (
     CustomLiftWorkout,
     CustomLiftExercise,
     LiftExerciseLog,
+    WorkoutTemplate,
+    WorkoutExercise,
+    UserExercisePerformance,
 )
 
 import json
@@ -200,18 +203,91 @@ def category_detail(request, name):
 @login_required
 def workout_setup(request, workout_name):
     gym_options = [
-        "No Equipment (Bodyweight)",
-        "Home Gym / Dumbbells",
-        "General Commercial Gym",
+        ("bodyweight", "No Equipment (Bodyweight)"),
+        ("home_gym", "Home Gym / Dumbbells"),
+        ("commercial", "General Commercial Gym"),
+        ("planet_fitness", "Planet Fitness"),
+        ("crunch", "Crunch Fitness"),
+        ("life_time", "Life Time Fitness"),
     ]
-
-    custom_workouts = CustomLiftWorkout.objects.filter(user=request.user)
-
-    return render(request, 'tracker/workout_setup.html', {
-        'workout_name': workout_name,
-        'gym_options': gym_options,
-        'custom_workouts': custom_workouts,
+    return render(request, "tracker/workout_setup.html", {
+        "workout_name": workout_name,
+        "gym_options": gym_options,
     })
+
+
+@login_required
+def premade_workout_detail(request, workout_name, gym_type):
+    normalized = workout_name.lower().replace(" ", "_")
+    workout = get_object_or_404(
+        WorkoutTemplate,
+        category=normalized,
+        gym_type=gym_type
+    )
+
+    exercises = workout.exercises.all()
+    previous_lookup = {}
+
+    for exercise in exercises:
+        previous_lookup[exercise.id] = UserExercisePerformance.objects.filter(
+            user=request.user,
+            workout=workout,
+            exercise=exercise
+        ).first()
+
+    return render(request, "tracker/premade_workout_detail.html", {
+        "workout": workout,
+        "exercises": exercises,
+        "previous_lookup": previous_lookup,
+    })
+
+
+@login_required
+@require_POST
+def save_premade_workout_progress(request, workout_slug):
+    workout = get_object_or_404(WorkoutTemplate, slug=workout_slug)
+
+    for exercise in workout.exercises.all():
+        prefix = f"exercise_{exercise.id}_"
+
+        def f(name):
+            value = request.POST.get(prefix + name)
+            return float(value) if value not in (None, "") else None
+
+        def i(name):
+            value = request.POST.get(prefix + name)
+            return int(value) if value not in (None, "") else None
+
+        has_any_value = any(
+            request.POST.get(prefix + field)
+            for field in [
+                "set_1_weight", "set_1_reps",
+                "set_2_weight", "set_2_reps",
+                "set_3_weight", "set_3_reps",
+                "set_4_weight", "set_4_reps",
+            ]
+        )
+
+        if not has_any_value:
+            continue
+
+        UserExercisePerformance.objects.create(
+            user=request.user,
+            workout=workout,
+            exercise=exercise,
+            set_1_weight=f("set_1_weight"),
+            set_1_reps=i("set_1_reps"),
+            set_2_weight=f("set_2_weight"),
+            set_2_reps=i("set_2_reps"),
+            set_3_weight=f("set_3_weight"),
+            set_3_reps=i("set_3_reps"),
+            set_4_weight=f("set_4_weight"),
+            set_4_reps=i("set_4_reps"),
+            notes=request.POST.get(prefix + "notes", "").strip(),
+        )
+
+    messages.success(request, "Workout progress saved.")
+    return redirect("premade_workout_detail", workout_name=workout.category, gym_type=workout.gym_type)
 
 @login_required
 def create_custom_workout(request):
@@ -465,3 +541,52 @@ def update_goals(request):
         goal.save() 
         
         return JsonResponse({'status': 'success'})
+    
+
+@login_required
+def get_premade_workout(request, workout_name, gym_type):
+    normalized = workout_name.lower().replace(" ", "_")
+
+    workout = get_object_or_404(
+        WorkoutTemplate,
+        category=normalized,
+        gym_type=gym_type
+    )
+
+    exercises = []
+    for exercise in workout.exercises.all():
+        latest = UserExercisePerformance.objects.filter(
+            user=request.user,
+            workout=workout,
+            exercise=exercise
+        ).first()
+
+        exercises.append({
+            "id": exercise.id,
+            "name": exercise.name,
+            "order": exercise.order,
+            "sets": exercise.sets,
+            "reps": exercise.reps,
+            "rest_seconds": exercise.rest_seconds,
+            "notes": exercise.notes,
+            "previous": {
+                "set_1_weight": latest.set_1_weight if latest else None,
+                "set_1_reps": latest.set_1_reps if latest else None,
+                "set_2_weight": latest.set_2_weight if latest else None,
+                "set_2_reps": latest.set_2_reps if latest else None,
+                "set_3_weight": latest.set_3_weight if latest else None,
+                "set_3_reps": latest.set_3_reps if latest else None,
+                "set_4_weight": latest.set_4_weight if latest else None,
+                "set_4_reps": latest.set_4_reps if latest else None,
+                "notes": latest.notes if latest else "",
+            }
+        })
+
+    return JsonResponse({
+        "workout": {
+            "name": workout.name,
+            "description": workout.description,
+            "slug": workout.slug,
+        },
+        "exercises": exercises
+    })
