@@ -21,6 +21,7 @@ from .models import (
 
 import json
 import requests
+import logging
 from django.conf import settings
 
 
@@ -111,72 +112,6 @@ def nutrition_tracker(request):
 
     # 3. Send the box to the template
     return render(request, 'tracker/nutrition.html', context)
-
-@login_required
-def api_food_search(request):
-    query = request.GET.get('query', '').lower().strip()
-    
-    # Added "weight_per_unit" to each item so the JS slider has a number to multiply by!
-    mock_db = {
-        "apple": {
-            "products": [{
-                "product_name": "red apple (fresh)",
-                "image_front_small_url": "https://upload.wikimedia.org/wikipedia/commons/1/15/Red_Apple.jpg",
-                "nutriments": {"proteins_100g": 0.3, "carbohydrates_100g": 14, "fat_100g": 0.2},
-                "weight_per_unit": 182
-            }]
-        },
-        "chicken": {
-            "products": [{
-                "product_name": "chicken breast (grilled)",
-                "image_front_small_url": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Grilled_Chicken_Breast.jpg",
-                "nutriments": {"proteins_100g": 31, "carbohydrates_100g": 0, "fat_100g": 3.6},
-                "weight_per_unit": 150
-            }]
-        },
-        "cheetos": {
-            "products": [{
-                "product_name": "cheetos crunchy",
-                "image_front_small_url": "https://upload.wikimedia.org/wikipedia/commons/d/de/Cheetos-Crunchy.jpg",
-                "nutriments": {"proteins_100g": 5.8, "carbohydrates_100g": 53.0, "fat_100g": 35.0},
-                "weight_per_unit": 28
-            }]
-        },
-        "oreo": {
-            "products": [{
-                "product_name": "oreo double stuf",
-                "image_front_small_url": "https://upload.wikimedia.org/wikipedia/commons/3/3e/Oreo-Two-Cookies.jpg",
-                "nutriments": {"proteins_100g": 3, "carbohydrates_100g": 68, "fat_100g": 21},
-                "weight_per_unit": 11
-            }]
-        },
-        "pizza": {
-            "products": [{
-                "product_name": "pepperoni pizza",
-                "image_front_small_url": "https://upload.wikimedia.org/wikipedia/commons/a/a3/Eq_it-na_pizza-margherita_sep2005_sml.jpg",
-                "nutriments": {"proteins_100g": 12, "carbohydrates_100g": 26, "fat_100g": 10},
-                "weight_per_unit": 300
-            }]
-        }
-    }
-
-    if query in mock_db:
-        return JsonResponse(mock_db[query])
-
-    # Fallback to Real API
-    url = f"https://world.openfoodfacts.org/cgi/search.pl?search_terms={query}&search_simple=1&action=process&json=1&page_size=20&fields=product_name,nutriments,image_front_small_url,brands"
-    headers = {'User-Agent': 'MyRetroApp/1.0'}
-
-    try:
-        response = requests.get(url, headers=headers, timeout=5)
-        data = response.json()
-        # We need to inject a default weight for API items so they don't NaN out
-        for p in data.get('products', []):
-            if 'weight_per_unit' not in p:
-                p['weight_per_unit'] = 100 
-        return JsonResponse(data)
-    except:
-        return JsonResponse({"products": []})
 
 @login_required
 def category_detail(request, name):
@@ -465,3 +400,74 @@ def update_goals(request):
         goal.save() 
         
         return JsonResponse({'status': 'success'})
+
+
+def get_fatsecret_token():
+    url = "https://oauth.fatsecret.com/connect/token"
+    data = {
+        'grant_type': 'client_credentials',
+        'scope': 'basic'
+    }
+    
+    # Debug: Check if settings are actually loading (Don't worry, this only prints to your terminal)
+    print(f"DEBUG: Using Client ID: {settings.FATSECRET_CLIENT_ID[:5]}...") 
+
+    response = requests.post(
+        url, 
+        data=data, 
+        auth=(settings.FATSECRET_CLIENT_ID, settings.FATSECRET_CLIENT_SECRET)
+    )
+
+    # 1. Check if the token request actually worked
+    if response.status_code != 200:
+        print(f"!!! TOKEN FAILURE: {response.status_code}")
+        print(f"!!! RESPONSE: {response.text}")
+        return None
+
+    token = response.json().get('access_token')
+    
+    # 2. Confirm we got a string back
+    if token:
+        print("Successfully obtained Access Token.")
+    else:
+        print("Token request succeeded but 'access_token' was missing from JSON.")
+        
+    return token
+
+@login_required
+def api_food_search(request):
+    query = request.GET.get('q', '')
+    token = get_fatsecret_token()
+    
+    # The FatSecret REST endpoint (different from the token URL)
+    url = "https://platform.fatsecret.com/rest/server.api"
+    
+    # FatSecret needs these EXACT keys
+    params = {
+        'method': 'foods.search',
+        'search_expression': query,
+        'format': 'json'
+    }
+    
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+
+    # Use 'get' or 'post' - FatSecret supports both, but params must be correct
+    response = requests.get(url, params=params, headers=headers)
+    data = response.json()
+
+    # --- DEBUG STEP: Paste what this prints into our chat ---
+    print("RAW RESPONSE:", data) 
+    # -------------------------------------------------------
+
+    # Extract the food list
+    # Path: data -> foods -> food
+    foods_data = data.get('foods', {})
+    results = foods_data.get('food', [])
+
+    # If there's only 1 result, FatSecret sends a dict. Convert to list.
+    if isinstance(results, dict):
+        results = [results]
+
+    return JsonResponse({'results': results})

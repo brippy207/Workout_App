@@ -9,12 +9,42 @@
         margin: 0 auto;
     }
 
-    .settings-card {
-        background: var(--soft-white);
-        border: 2px solid var(--wood);
-        padding: 20px;
-        border-radius: 12px;
-        margin-bottom: 30px;
+    /* Slimmed down version of the card */
+    #goal-panel.settings-card {
+        padding: 10px 15px;
+        margin-bottom: 15px;
+    }
+
+    /* Remove the big brown box and turn it into a simple text element */
+    .cal-display-70s-mini {
+        background: transparent;
+        color: var(--wood);
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.9rem;
+        font-weight: bold;
+        border: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .cal-display-70s-mini span {
+        color: var(--burnt-orange);
+        font-size: 1.1rem;
+    }
+
+    /* Keep the readout grid small */
+    .readout-grid {
+        margin-top: 8px;
+        padding: 5px;
+        font-size: 0.8rem;
+        gap: 5px;
+    }
+
+    .readout-item strong {
+        font-size: 1rem !important;
     }
 
     .input-row {
@@ -93,18 +123,6 @@
         font-weight: bold;
         cursor: pointer;
         border-radius: 8px;
-    }
-
-    .cal-display-70s {
-        background: var(--wood);
-        color: var(--mustard);
-        padding: 15px;
-        border-radius: 8px;
-        text-align: center;
-        font-size: 1.5rem;
-        font-weight: bold;
-        margin-bottom: 25px;
-        border: 2px solid var(--burnt-orange);
     }
 
     .slider-grid {
@@ -384,96 +402,120 @@
         font-size: 1.2rem;
         color: var(--burnt-orange);
     }
+
+    /* Header layout */
+    .nutrition-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+    }
+
+    /* The hidden settings drawer */
+    #goal-drawer {
+        display: none;
+        /* Hidden by default */
+        background: var(--cream);
+        border: 2px dashed var(--wood);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 30px;
+        animation: slideDown 0.3s ease-out;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Make the target text look clean inside the drawer */
+    .drawer-target-text {
+        font-family: 'Courier New', Courier, monospace;
+        font-weight: bold;
+        color: var(--wood);
+        text-transform: lowercase;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
+
 <div class="container">
-    <h1>food tracker (macros)</h1>
+    <div class="nutrition-header">
+        <h1 style="margin:0;">food tracker</h1>
+        <button id="edit-goals-btn" class="retro-btn" onclick="toggleGoalDrawer()">edit goals</button>
+    </div>
 
-    {% csrf_token %}
-
-    <div class="settings-card" id="goal-panel">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3 style="margin: 0;">daily goals</h3>
-            <button id="edit-goals-btn" class="retro-btn" onclick="toggleEditMode()">edit goals</button>
-        </div>
-
-        <div class="cal-display-70s">
-            <label>Target Intake:</label>
-            <span id="goal-cal-display">0</span> kcal
-        </div>
-
-        <div id="goals-container" class="view-mode">
-
-            <div class="readout-grid">
-                <div class="readout-item">
-                    <span>protein:</span>
-                    <strong id="readout-p">{{ goal.protein_goal }}g</strong>
-                </div>
-                <div class="readout-item">
-                    <span>carbs:</span>
-                    <strong id="readout-c">{{ goal.carb_goal }}g</strong>
-                </div>
-                <div class="readout-item">
-                    <span>fats:</span>
-                    <strong id="readout-f">{{ goal.fat_goal }}g</strong>
-                </div>
+    <div id="goal-drawer">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h4 style="margin:0;">daily targets</h4>
+            <div class="drawer-target-text">
+                total: <span id="goal-cal-display" style="color: var(--burnt-orange);">0</span> kcal
             </div>
+        </div>
 
-            <div class="slider-grid" id="sliders-wrapper" style="display: none;">
-                <div class="slider-group">
-                    <div class="slider-header">
-                        <label>protein</label>
-                        <span class="value-badge"><span id="val-p">{{ goal.protein_goal }}</span>g</span>
-                    </div>
-                    <input type="range" id="goal-p" min="40" max="300" value="{{ goal.protein_goal }}"
-                        class="retro-slider" oninput="updateBars()" onchange="saveGoalsToDB()">
+        <div class="slider-grid">
+            <div class="slider-group">
+                <div class="slider-header">
+                    <label>protein</label>
+                    <span class="value-badge"><span id="val-p">{{ goal.protein_goal }}</span>g</span>
                 </div>
-
-                <div class="slider-group">
-                    <div class="slider-header">
-                        <label>carbs</label>
-                        <span class="value-badge"><span id="val-c">{{ goal.carb_goal }}</span>g</span>
-                    </div>
-                    <input type="range" id="goal-c" min="100" max="500" value="{{ goal.carb_goal }}"
-                        class="retro-slider" oninput="updateBars()" onchange="saveGoalsToDB()">
+                <input type="range" id="goal-p" min="40" max="300" value="{{ goal.protein_goal }}" class="retro-slider"
+                    oninput="updateBars()" onchange="saveGoalsToDB()">
+            </div>
+            <div class="slider-group">
+                <div class="slider-header">
+                    <label>carbs</label>
+                    <span class="value-badge"><span id="val-c">{{ goal.carb_goal }}</span>g</span>
                 </div>
-
-                <div class="slider-group">
-                    <div class="slider-header">
-                        <label>fats</label>
-                        <span class="value-badge"><span id="val-f">{{ goal.fat_goal }}</span>g</span>
-                    </div>
-                    <input type="range" id="goal-f" min="20" max="300" value="{{ goal.fat_goal }}" class="retro-slider"
-                        oninput="updateBars()" onchange="saveGoalsToDB()">
+                <input type="range" id="goal-c" min="100" max="500" value="{{ goal.carb_goal }}" class="retro-slider"
+                    oninput="updateBars()" onchange="saveGoalsToDB()">
+            </div>
+            <div class="slider-group">
+                <div class="slider-header">
+                    <label>fats</label>
+                    <span class="value-badge"><span id="val-f">{{ goal.fat_goal }}</span>g</span>
                 </div>
+                <input type="range" id="goal-f" min="20" max="300" value="{{ goal.fat_goal }}" class="retro-slider"
+                    oninput="updateBars()" onchange="saveGoalsToDB()">
             </div>
         </div>
     </div>
 
-    <div class="meal-section">
+    <div class="progress-section" style="margin-bottom: 40px;">
         <div class="progress-container">
             <div class="progress-label">
                 <span style="color: var(--burnt-orange); font-weight: 900; font-size: 1.2rem;">total calories</span>
                 <span id="cal-text">0 / 2000 kcal</span>
             </div>
-            <div class="progress-bg" style="height: 40px; border-width: 4px;">
-                <div id="cal-bar" class="progress-fill" style="background: var(--wood);"></div>
+            <div class="progress-bg" style="height: 40px; border-width: 4px; display: flex;">
+                <div id="cal-bar-p" class="progress-fill" style="background: var(--burnt-orange); width: 0%;"></div>
+                <div id="cal-bar-c" class="progress-fill" style="background: var(--mustard); width: 0%;"></div>
+                <div id="cal-bar-f" class="progress-fill" style="background: #8b5e3c; width: 0%;"></div>
             </div>
         </div>
+
         <div class="progress-container">
             <div class="progress-label"><span>protein</span> <span id="p-text">0 / 150g</span></div>
             <div class="progress-bg">
                 <div id="p-bar" class="progress-fill" style="background: var(--burnt-orange);"></div>
             </div>
         </div>
+
         <div class="progress-container">
             <div class="progress-label"><span>carbs</span> <span id="c-text">0 / 200g</span></div>
             <div class="progress-bg">
                 <div id="c-bar" class="progress-fill" style="background: var(--mustard);"></div>
             </div>
         </div>
+
         <div class="progress-container">
             <div class="progress-label"><span>fats</span> <span id="f-text">0 / 70g</span></div>
             <div class="progress-bg">
@@ -500,7 +542,7 @@
         </div>
         <div id="auto-panel">
             <div class="search-row">
-                <input type="text" id="auto-search-input" placeholder="search a grocery item...">
+                <input type="text" id="food-search-input" placeholder="search a grocery item...">
                 <button onclick="searchFood()">search</button>
             </div>
             <div class="search-status" id="search-status"></div>
@@ -583,8 +625,14 @@
         const gF = parseInt(document.getElementById('goal-f').value);
 
         const totalGoalCal = (gP * 4) + (gC * 4) + (gF * 9);
-        const currentCal = (currentP * 4) + (currentC * 4) + (currentF * 9);
 
+        // Calculate current calories from each macro
+        const calFromP = currentP * 4;
+        const calFromC = currentC * 4;
+        const calFromF = currentF * 9;
+        const currentCal = calFromP + calFromC + calFromF;
+
+        // Update Text Readouts
         document.getElementById('val-p').innerText = gP;
         document.getElementById('val-c').innerText = gC;
         document.getElementById('val-f').innerText = gF;
@@ -595,18 +643,19 @@
         document.getElementById('c-text').innerText = `${Math.round(currentC)} / ${gC}g`;
         document.getElementById('f-text').innerText = `${Math.round(currentF)} / ${gF}g`;
 
+        // --- SEGMENTED CALORIE BAR LOGIC ---
+        const getPct = (val) => (totalGoalCal > 0) ? (val / totalGoalCal) * 100 : 0;
+
+        // We calculate percentages relative to the total TARGET calories
+        document.getElementById('cal-bar-p').style.width = getPct(calFromP) + '%';
+        document.getElementById('cal-bar-c').style.width = getPct(calFromC) + '%';
+        document.getElementById('cal-bar-f').style.width = getPct(calFromF) + '%';
+
+        // Individual Macro Bars (remain as they were)
         const getW = (curr, goal) => (goal > 0) ? Math.min((curr / goal) * 100, 100) : 0;
-        document.getElementById('cal-bar').style.width = getW(currentCal, totalGoalCal) + '%';
         document.getElementById('p-bar').style.width = getW(currentP, gP) + '%';
         document.getElementById('c-bar').style.width = getW(currentC, gC) + '%';
         document.getElementById('f-bar').style.width = getW(currentF, gF) + '%';
-    }
-
-    function switchMode(mode) {
-        document.getElementById('manual-panel').style.display = (mode === 'manual') ? 'block' : 'none';
-        document.getElementById('auto-panel').style.display = (mode === 'auto') ? 'block' : 'none';
-        document.getElementById('btn-manual').className = (mode === 'manual') ? 'active' : '';
-        document.getElementById('btn-auto').className = (mode === 'auto') ? 'active' : '';
     }
 
     // 4. Manual Logic
@@ -631,66 +680,47 @@
 
     // 5. Search Logic (Using your Local API)
     async function searchFood() {
-        const query = document.getElementById('auto-search-input').value.trim();
-        const statusEl = document.getElementById('search-status');
-        const resultsEl = document.getElementById('search-results');
+        const searchInput = document.getElementById('food-search-input');
+        const resultsDiv = document.getElementById('search-results');
+        const statusDiv = document.getElementById('search-status');
 
+        const query = searchInput.value.trim();
         if (!query) return;
 
-        statusEl.textContent = 'searching local vault...';
-        resultsEl.innerHTML = '';
+        // UI Feedback
+        statusDiv.innerText = "searching fatsecret...";
+        resultsDiv.innerHTML = "";
+        resultsDiv.style.display = "flex";
 
         try {
-            // Change this URL to match your urls.py path
-            const res = await fetch(`/tracker/api/search-food/?query=${encodeURIComponent(query)}`);
-            const data = await res.json();
+            const response = await fetch(`/tracker/api/search-food/?q=${encodeURIComponent(query)}`);
+            const data = await response.json();
 
-            if (data.products.length === 0) {
-                statusEl.textContent = 'item not found in vault.';
-                return;
-            }
+            if (data.results && data.results.length > 0) {
+                statusDiv.innerText = `${data.results.length} items found:`;
 
-            statusEl.textContent = 'matches found:';
-            resultsEl.style.display = 'flex';
+                data.results.forEach(food => {
+                    const item = document.createElement('div');
+                    item.className = 'result-item';
 
-            data.products.forEach(product => {
-                const div = document.createElement('div');
-                div.className = 'result-item';
-
-                // We use a fallback empty string if there's no image
-                const imgUrl = product.image_front_small_url || '';
-                const imgTag = imgUrl ? `<img src="${imgUrl}" alt="${product.product_name}">` : '';
-
-                // This puts the image and the name inside the result box
-                div.innerHTML = `
-                    ${imgTag}
-                    <div class="result-name">${product.product_name.toLowerCase()}</div>
+                    // We use the food_description FatSecret provides
+                    item.innerHTML = `
+                    <div class="result-name">${food.food_name}</div>
+                    <div class="result-meta">${food.food_description}</div>
                 `;
 
-                div.onclick = () => {
-                    // Remove 'selected' class from others
-                    document.querySelectorAll('.result-item').forEach(el => el.classList.remove('selected'));
-                    div.classList.add('selected');
+                    // When clicked, "Select" this food and fill the manual form
+                    item.onclick = () => selectFatSecretFood(food);
 
-                    // Store the selection
-                    selectedProduct = {
-                        description: product.product_name,
-                        p_100: product.nutriments.proteins_100g,
-                        c_100: product.nutriments.carbohydrates_100g,
-                        f_100: product.nutriments.fat_100g,
-                        weight_per_unit: product.weight_per_unit
-                    };
-
-                    // Show the slider and preview
-                    document.getElementById('serving-slider-section').style.display = 'block';
-                    document.getElementById('whole-items-section').style.display = 'flex';
-                    document.getElementById('auto-preview').style.display = 'block';
-                    updateAutoPreview();
-                };
-                resultsEl.appendChild(div);
-            });
+                    resultsDiv.appendChild(item);
+                });
+            } else {
+                statusDiv.innerText = "no results found.";
+                resultsDiv.style.display = "none";
+            }
         } catch (err) {
-            statusEl.textContent = 'vault connection error.';
+            console.error("API Call failed:", err);
+            statusDiv.innerText = "error connecting to server.";
         }
     }
 
@@ -750,9 +780,19 @@
 
     function saveGoalsToDB() {
         // 1. Grab the values from the sliders
-        const p = document.getElementById('goal-p').value;
-        const c = document.getElementById('goal-c').value;
-        const f = document.getElementById('goal-f').value;
+        const pEl = document.getElementById('goal-p');
+        const cEl = document.getElementById('goal-c');
+        const fEl = document.getElementById('goal-f');
+
+        // ONLY try to save if these elements actually exist on the page
+        if (!pEl || !cEl || !fEl) {
+            console.log("Sliders not found, skipping goal save.");
+            return;
+        }
+
+        const p = pEl.value;
+        const c = cEl.value;
+        const f = fEl.value;
 
         // 2. Send them to Django
         fetch("{% url 'update_goals' %}", {
@@ -772,33 +812,73 @@
             .catch(error => console.error('Error saving goals:', error));
     }
 
-    function toggleEditMode() {
-        const wrapper = document.getElementById('sliders-wrapper');
-        const readouts = document.querySelector('.readout-grid');
+    function toggleGoalDrawer() {
+        const drawer = document.getElementById('goal-drawer');
         const btn = document.getElementById('edit-goals-btn');
 
-        // 1. If sliders are HIDDEN, we want to SHOW them (Switch to Edit Mode)
-        if (wrapper.style.display === 'none' || wrapper.style.display === '') {
-            wrapper.style.display = 'flex';   // Show sliders
-            readouts.style.display = 'none';   // Hide static text
-            btn.innerText = 'save goals';      // Change button text
-            btn.classList.add('active-mode');  // Add the orange/pressed style
-        }
-        // 2. If sliders are VISIBLE, we want to HIDE them (Switch back to View Mode)
-        else {
-            wrapper.style.display = 'none';    // Hide sliders
-            readouts.style.display = 'grid';   // Show static text
-            btn.innerText = 'edit goals';      // Change button text back
+        // Toggle the display
+        if (drawer.style.display === 'none' || drawer.style.display === '') {
+            drawer.style.display = 'block';
+            btn.innerText = 'close settings';
+            btn.classList.add('active-mode'); // Turns it orange/pressed
+        } else {
+            drawer.style.display = 'none';
+            btn.innerText = 'edit goals';
             btn.classList.remove('active-mode');
-
-            // Update the static text readouts so they match the new slider positions
-            document.getElementById('readout-p').innerText = document.getElementById('goal-p').value + 'g';
-            document.getElementById('readout-c').innerText = document.getElementById('goal-c').value + 'g';
-            document.getElementById('readout-f').innerText = document.getElementById('goal-f').value + 'g';
-
-            // Trigger the background save to Django
+            // Save the new targets to the database when closing
             saveGoalsToDB();
         }
+    }
+
+    function switchMode(mode) {
+        // 1. Get the panels
+        const manualPanel = document.getElementById('manual-panel');
+        const autoPanel = document.getElementById('auto-panel');
+
+        // 2. Get the buttons
+        const btnManual = document.getElementById('btn-manual');
+        const btnAuto = document.getElementById('btn-auto');
+
+        if (mode === 'manual') {
+            manualPanel.style.display = 'block';
+            autoPanel.style.display = 'none';
+            btnManual.classList.add('active');
+            btnAuto.classList.remove('active');
+        } else {
+            manualPanel.style.display = 'none';
+            autoPanel.style.display = 'block';
+            btnManual.classList.remove('active');
+            btnAuto.classList.add('active');
+        }
+    }
+
+    function selectFatSecretFood(food) {
+        // 1. Switch UI back to manual mode so they can see the numbers
+        switchMode('manual');
+
+        // 2. Set the name
+        document.getElementById('food-name').value = food.food_name;
+        document.getElementById('add-s').value = 1; // Default to 1 serving
+
+        // 3. Extract numbers from the description string using Regex
+        const desc = food.food_description;
+
+        // Matches numbers following the labels
+        const pMatch = desc.match(/Protein: ([\d.]+)g/);
+        const cMatch = desc.match(/Carbs: ([\d.]+)g/);
+        const fMatch = desc.match(/Fat: ([\d.]+)g/);
+
+        // 4. Fill the manual input fields
+        document.getElementById('add-p').value = pMatch ? pMatch[1] : 0;
+        document.getElementById('add-c').value = cMatch ? cMatch[1] : 0;
+        document.getElementById('add-f').value = fMatch ? fMatch[1] : 0;
+
+        // 5. Visual feedback
+        const statusDiv = document.getElementById('search-status');
+        statusDiv.innerText = "macros loaded into manual form!";
+
+        // Optional: focus the serving box so they can adjust it
+        document.getElementById('add-s').focus();
     }
 
     // Event Listeners

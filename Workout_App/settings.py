@@ -109,3 +109,7 @@ mimetypes.add_type("image/jpeg", ".jpg", True)
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = '/tracker/'
 LOGOUT_REDIRECT_URL = 'login'
+
+#Food API Data
+FATSECRET_CLIENT_ID = '13daffb8169041eb943bbaea4b9d7ee1'
+FATSECRET_CLIENT_SECRET = '603150da930c4e60a6b5b13a38082a0e'
