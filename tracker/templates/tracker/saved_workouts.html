@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .saved-page {
+    max-width: 1100px;
+    margin: 40px auto 80px;
+    padding: 0 24px;
+    color: var(--wood);
+  }
+
+  .saved-header {
+    text-align: center;
+    margin-bottom: 34px;
+  }
+
+  .saved-header h2 {
+    font-size: 2.8rem;
+    margin-bottom: 8px;
+  }
+
+  .saved-header p {
+    font-size: 1.1rem;
+    color: var(--burnt-orange);
+    font-weight: 800;
+  }
+
+  .saved-grid-page {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(240px, 1fr));
+    gap: 28px;
+  }
+
+  .saved-workout-card {
+    background: var(--soft-white);
+    border: 3px solid var(--wood);
+    color: var(--wood);
+    min-height: 170px;
+    padding: 26px;
+    border-radius: 28px;
+    box-shadow: 10px 10px 0 var(--mustard);
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    text-align: center;
+  }
+
+  .saved-workout-card:hover {
+    transform: translateY(-3px);
+  }
+
+  .saved-workout-card h3 {
+    margin: 0;
+    font-size: 1.5rem;
+  }
+
+  .saved-card-pill {
+    border: 2px solid var(--wood);
+    border-radius: 999px;
+    padding: 9px 16px;
+    background: var(--cream);
+    font-weight: 900;
+    box-shadow: 5px 5px 0 var(--mustard);
+  }
+
+  .empty-saved-box {
+    background: var(--cream);
+    border: 3px solid var(--burnt-orange);
+    border-radius: 30px;
+    box-shadow: 12px 12px 0 var(--mustard);
+    padding: 40px;
+    text-align: center;
+  }
+
+  @media (max-width: 900px) {
+    .saved-grid-page {
+      grid-template-columns: repeat(2, minmax(240px, 1fr));
+    }
+  }
+
+  @media (max-width: 600px) {
+    .saved-grid-page {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="saved-page">
+  <div class="saved-header">
+    <h2>Saved Workouts</h2>
+    <p>Your custom workouts, ready to run again.</p>
+  </div>
+
+  {% if custom_workouts %}
+    <div class="saved-grid-page">
+      {% for workout in custom_workouts %}
+        <a href="{% url 'custom_workout_detail' workout.id %}" class="saved-workout-card">
+          <h3>{{ workout.name }}</h3>
+          <div class="saved-card-pill">Open Workout</div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-saved-box">
+      <h3>No saved workouts yet</h3>
+      <p>Go back to lifting and click “Make Your Own.”</p>
+      <a href="{% url 'category' 'lifting' %}" class="saved-card-pill">Back to Lifting</a>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}

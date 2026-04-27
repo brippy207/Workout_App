@@ -80,14 +80,6 @@ def home(request):
 
 
 @login_required
-def workouts(request):
-    custom_workouts = CustomLiftWorkout.objects.filter(user=request.user)
-    return render(request, 'tracker/workouts.html', {
-        'custom_workouts': custom_workouts
-    })
-
-
-@login_required
 def nutrition(request):
     # This finds the goal in the DB. If it's not there, it creates it.
     goal, created = UserGoal.objects.get_or_create(user=request.user)
@@ -116,6 +108,15 @@ def nutrition_tracker(request):
     # 3. Send the box to the template
     return render(request, 'tracker/nutrition.html', context)
 
+
+@login_required
+def workouts(request):
+    custom_workouts = CustomLiftWorkout.objects.filter(user=request.user).order_by('-id')
+    return render(request, 'tracker/workouts.html', {
+        'custom_workouts': custom_workouts
+    })
+
+
 @login_required
 def category_detail(request, name):
     data = {
@@ -125,15 +126,38 @@ def category_detail(request, name):
         'stretching': ['Yoga', 'Upper Body', 'Lower Body', 'Full Body Mobility', 'Dynamic Stretching', 'Static Stretching'],
     }
 
+
     context = {
         'category_name': name,
         'sub_categories': data.get(name, []),
+        'lifting_cards': [],
     }
 
     if name == 'lifting':
-        context['custom_workouts'] = CustomLiftWorkout.objects.filter(user=request.user)
+        context['custom_workouts'] = CustomLiftWorkout.objects.filter(
+            user=request.user
+        ).order_by('-id')
+
+        context['lifting_cards'] = [
+            {
+                'name': item,
+                'slug': item,
+            }
+            for item in data['lifting']
+        ]
 
     return render(request, 'tracker/category_detail.html', context)
+
+@login_required
+def saved_workouts(request):
+    custom_workouts = CustomLiftWorkout.objects.filter(
+        user=request.user
+    ).order_by('-id')
+
+    return render(request, 'tracker/saved_workouts.html', {
+        'custom_workouts': custom_workouts
+    })
+
 
 @login_required
 def workout_setup(request, workout_name):
@@ -145,6 +169,7 @@ def workout_setup(request, workout_name):
         ("crunch", "Crunch Fitness"),
         ("life_time", "Life Time Fitness"),
     ]
+
     return render(request, "tracker/workout_setup.html", {
         "workout_name": workout_name,
         "gym_options": gym_options,
@@ -152,28 +177,52 @@ def workout_setup(request, workout_name):
 
 
 @login_required
-def premade_workout_detail(request, workout_name, gym_type):
+def get_premade_workout(request, workout_name, gym_type):
     normalized = workout_name.lower().replace(" ", "_")
+
     workout = get_object_or_404(
         WorkoutTemplate,
         category=normalized,
         gym_type=gym_type
     )
 
-    exercises = workout.exercises.all()
-    previous_lookup = {}
+    exercises = []
 
-    for exercise in exercises:
-        previous_lookup[exercise.id] = UserExercisePerformance.objects.filter(
+    for exercise in workout.exercises.all():
+        latest = UserExercisePerformance.objects.filter(
             user=request.user,
             workout=workout,
             exercise=exercise
         ).first()
 
-    return render(request, "tracker/premade_workout_detail.html", {
-        "workout": workout,
-        "exercises": exercises,
-        "previous_lookup": previous_lookup,
+        exercises.append({
+            "id": exercise.id,
+            "name": exercise.name,
+            "order": exercise.order,
+            "sets": exercise.sets,
+            "reps": exercise.reps,
+            "rest_seconds": exercise.rest_seconds,
+            "notes": exercise.notes,
+            "previous": {
+                "set_1_weight": latest.set_1_weight if latest else None,
+                "set_1_reps": latest.set_1_reps if latest else None,
+                "set_2_weight": latest.set_2_weight if latest else None,
+                "set_2_reps": latest.set_2_reps if latest else None,
+                "set_3_weight": latest.set_3_weight if latest else None,
+                "set_3_reps": latest.set_3_reps if latest else None,
+                "set_4_weight": latest.set_4_weight if latest else None,
+                "set_4_reps": latest.set_4_reps if latest else None,
+                "notes": latest.notes if latest else "",
+            }
+        })
+
+    return JsonResponse({
+        "workout": {
+            "name": workout.name,
+            "description": workout.description,
+            "slug": workout.slug,
+        },
+        "exercises": exercises
     })
 
 
@@ -181,6 +230,8 @@ def premade_workout_detail(request, workout_name, gym_type):
 @require_POST
 def save_premade_workout_progress(request, workout_slug):
     workout = get_object_or_404(WorkoutTemplate, slug=workout_slug)
+
+    saved_anything = False
 
     for exercise in workout.exercises.all():
         prefix = f"exercise_{exercise.id}_"
@@ -221,8 +272,22 @@ def save_premade_workout_progress(request, workout_slug):
             notes=request.POST.get(prefix + "notes", "").strip(),
         )
 
-    messages.success(request, "Workout progress saved.")
-    return redirect("premade_workout_detail", workout_name=workout.category, gym_type=workout.gym_type)
+        saved_anything = True
+
+    if saved_anything:
+        WorkoutLog.objects.create(
+            user=request.user,
+            activity_name=workout.name,
+            duration=None,
+            distance=None,
+            color='#d46a1f',
+        )
+        messages.success(request, "Premade workout progress saved.")
+    else:
+        messages.error(request, "Enter at least one set before saving.")
+
+    return redirect('workout_setup', workout_name=workout.category.replace("_", " ").title())
+
 
 @login_required
 def create_custom_workout(request):
@@ -242,8 +307,11 @@ def create_custom_workout(request):
             name=workout_name
         )
 
+        saved_exercises = 0
+
         for i, exercise_name in enumerate(exercise_names):
             exercise_name = (exercise_name or '').strip()
+
             sets_value = _parse_positive_int(sets_list[i]) if i < len(sets_list) else None
             reps_value = _parse_positive_int(reps_list[i]) if i < len(reps_list) else None
             weight_value = _parse_nonnegative_float(weights_list[i]) if i < len(weights_list) else None
@@ -256,6 +324,12 @@ def create_custom_workout(request):
                     default_reps=reps_value,
                     default_weight=weight_value
                 )
+                saved_exercises += 1
+
+        if saved_exercises == 0:
+            workout.delete()
+            messages.error(request, "Add at least one valid exercise.")
+            return redirect('create_custom_workout')
 
         messages.success(request, "Custom workout saved.")
         return redirect('custom_workout_detail', workout_id=workout.id)
@@ -265,12 +339,17 @@ def create_custom_workout(request):
 
 @login_required
 def custom_workout_detail(request, workout_id):
-    workout = CustomLiftWorkout.objects.filter(user=request.user, id=workout_id).prefetch_related('exercises').first()
+    workout = CustomLiftWorkout.objects.filter(
+        user=request.user,
+        id=workout_id
+    ).prefetch_related('exercises').first()
+
     if not workout:
         messages.error(request, "Workout not found.")
         return redirect('workouts')
 
     exercise_cards = []
+
     for exercise in workout.exercises.all():
         last_log = LiftExerciseLog.objects.filter(
             user=request.user,
@@ -291,10 +370,16 @@ def custom_workout_detail(request, workout_id):
 @login_required
 @require_POST
 def log_custom_workout(request, workout_id):
-    workout = CustomLiftWorkout.objects.filter(user=request.user, id=workout_id).prefetch_related('exercises').first()
+    workout = CustomLiftWorkout.objects.filter(
+        user=request.user,
+        id=workout_id
+    ).prefetch_related('exercises').first()
+
     if not workout:
         messages.error(request, "Workout not found.")
         return redirect('workouts')
+
+    saved_anything = False
 
     for exercise in workout.exercises.all():
         sets_value = _parse_positive_int(request.POST.get(f"sets_{exercise.id}"))
@@ -310,17 +395,21 @@ def log_custom_workout(request, workout_id):
                 reps=reps_value,
                 weight=weight_value,
             )
+            saved_anything = True
 
-    WorkoutLog.objects.create(
-        user=request.user,
-        activity_name=workout.name,
-        duration=None,
-        distance=None,
-        color='#9b2915',
-    )
+    if saved_anything:
+        WorkoutLog.objects.create(
+            user=request.user,
+            activity_name=workout.name,
+            duration=None,
+            distance=None,
+            color='#9b2915',
+        )
+        messages.success(request, "Workout saved.")
+        return redirect('stats')
 
-    messages.success(request, "Workout saved.")
-    return redirect('stats')
+    messages.error(request, "Enter at least one valid exercise log.")
+    return redirect('custom_workout_detail', workout_id=workout.id)
 
 
 @login_required
@@ -478,53 +567,6 @@ def update_goals(request):
         return JsonResponse({'status': 'success'})
     
 
-@login_required
-def get_premade_workout(request, workout_name, gym_type):
-    normalized = workout_name.lower().replace(" ", "_")
-
-    workout = get_object_or_404(
-        WorkoutTemplate,
-        category=normalized,
-        gym_type=gym_type
-    )
-
-    exercises = []
-    for exercise in workout.exercises.all():
-        latest = UserExercisePerformance.objects.filter(
-            user=request.user,
-            workout=workout,
-            exercise=exercise
-        ).first()
-
-        exercises.append({
-            "id": exercise.id,
-            "name": exercise.name,
-            "order": exercise.order,
-            "sets": exercise.sets,
-            "reps": exercise.reps,
-            "rest_seconds": exercise.rest_seconds,
-            "notes": exercise.notes,
-            "previous": {
-                "set_1_weight": latest.set_1_weight if latest else None,
-                "set_1_reps": latest.set_1_reps if latest else None,
-                "set_2_weight": latest.set_2_weight if latest else None,
-                "set_2_reps": latest.set_2_reps if latest else None,
-                "set_3_weight": latest.set_3_weight if latest else None,
-                "set_3_reps": latest.set_3_reps if latest else None,
-                "set_4_weight": latest.set_4_weight if latest else None,
-                "set_4_reps": latest.set_4_reps if latest else None,
-                "notes": latest.notes if latest else "",
-            }
-        })
-
-    return JsonResponse({
-        "workout": {
-            "name": workout.name,
-            "description": workout.description,
-            "slug": workout.slug,
-        },
-        "exercises": exercises
-    })
 
 
 def get_fatsecret_token():

@@ -11,6 +11,11 @@
 </head>
 
 <body>
+{% if request.resolver_match.url_name != 'home' %}
+  <a href="javascript:history.back()" class="retro-back-btn">
+    ← Back
+  </a>
+{% endif %}
     <style>
         .flash-stack {
             width: min(760px, calc(100% - 32px));
@@ -46,6 +51,33 @@
         .flash-message.info {
             background: rgba(244, 238, 224, 0.96);
         }
+        .retro-back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+
+            text-decoration: none;
+            font-family: 'Courier New', monospace;
+            font-weight: 900;
+            font-size: 0.9rem;
+
+            padding: 10px 16px;
+
+            border: 3px solid var(--wood);
+            border-radius: 999px;
+
+            background: var(--soft-white);
+            color: var(--wood);
+
+            box-shadow: 6px 6px 0 var(--mustard);
+        }
+
+        .retro-back-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        
     </style>
 
     <nav

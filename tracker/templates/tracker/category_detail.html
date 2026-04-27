@@ -143,28 +143,33 @@
 <h2 style="text-align:center; margin-top: 24px;">{{ category_name|title }}</h2>
 
 <div class="grid-container">
-  {% for item in sub_categories %}
-    {% if category_name == 'cardio' or category_name == 'sports' or category_name == 'stretching' %}
-      <div class="category-box" onclick="openActivityModal('{{ item }}')">{{ item }}</div>
-    {% else %}
-      <a href="{% url 'workout_setup' item %}" class="category-box">{{ item }}</a>
-    {% endif %}
-  {% endfor %}
-
   {% if category_name == 'lifting' %}
-    <div class="category-box saved-box">
-      <div class="saved-box-title">Saved Workouts</div>
+    {% for card in lifting_cards %}
+      <div class="category-box saved-box">
+        <div class="saved-box-title">{{ card.icon }} {{ card.name }}</div>
 
-      {% if custom_workouts %}
-        {% for workout in custom_workouts %}
-          <a href="{% url 'custom_workout_detail' workout.id %}" class="saved-workout-link">
-            {{ workout.name }}
-          </a>
-        {% endfor %}
-      {% else %}
-        <div class="saved-empty">No saved workouts yet</div>
-      {% endif %}
-    </div>
+        <a href="{% url 'workout_setup' card.slug %}" class="saved-workout-link">
+          Premade Workout
+        </a>
+
+        <a href="{% url 'create_custom_workout' %}" class="saved-workout-link">
+          Make Your Own
+        </a>
+      </div>
+    {% endfor %}
+
+<div class="category-box saved-box">
+  <div class="saved-box-title">Saved Workouts</div>
+
+  <a href="{% url 'saved_workouts' %}" class="saved-workout-link">
+    View Saved Workouts
+  </a>
+</div>
+
+  {% else %}
+    {% for item in sub_categories %}
+      <div class="category-box" onclick="openActivityModal('{{ item }}')">{{ item }}</div>
+    {% endfor %}
   {% endif %}
 </div>
 

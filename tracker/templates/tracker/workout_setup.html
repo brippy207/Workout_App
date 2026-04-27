@@ -1,119 +1,279 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h2>{{ workout_name|title }} Setup</h2>
-<p>Choose your gym setup to load the default premade workout.</p>
+<style>
+  .lift-page {
+    max-width: 1050px;
+    margin: 40px auto 80px;
+    padding: 0 24px;
+    color: var(--wood);
+  }
 
-<div style="max-width: 500px; margin-bottom: 30px;">
-    <label for="gym-select"><strong>Gym Setup:</strong></label>
-    <select id="gym-select" style="width: 100%; padding: 10px; margin-top: 10px;">
-        <option value="">-- Select a setup --</option>
+  .lift-hero {
+    background: var(--cream);
+    border: 4px solid var(--burnt-orange);
+    border-radius: 38px;
+    box-shadow: 18px 18px 0 var(--mustard);
+    padding: 42px;
+    margin-bottom: 36px;
+  }
+
+  .lift-hero h2 {
+    font-size: 3rem;
+    margin: 0 0 10px;
+    text-align: center;
+  }
+
+  .lift-hero p {
+    text-align: center;
+    font-size: 1.2rem;
+    margin-bottom: 28px;
+  }
+
+  .gym-select-wrap {
+    display: flex;
+    justify-content: center;
+  }
+
+  #gym-select {
+    width: min(460px, 100%);
+    padding: 16px 20px;
+    border: 4px solid var(--wood);
+    border-radius: 22px;
+    background: var(--soft-white);
+    color: var(--wood);
+    font-size: 1.05rem;
+    font-weight: 800;
+    box-shadow: 8px 8px 0 var(--mustard);
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  .workout-card-shell {
+    background: var(--cream);
+    border: 4px solid var(--burnt-orange);
+    border-radius: 38px;
+    box-shadow: 18px 18px 0 var(--mustard);
+    padding: 42px;
+  }
+
+  .workout-title {
+    font-size: 2.4rem;
+    text-align: center;
+    margin: 0 0 10px;
+  }
+
+  .workout-desc {
+    text-align: center;
+    font-size: 1.1rem;
+    margin-bottom: 32px;
+  }
+
+  .exercise-card {
+    background: var(--soft-white);
+    border: 4px solid var(--wood);
+    border-radius: 30px;
+    box-shadow: 10px 10px 0 var(--mustard);
+    padding: 28px;
+    margin-bottom: 28px;
+  }
+
+  .exercise-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    align-items: center;
+    border-bottom: 3px dashed var(--burnt-orange);
+    padding-bottom: 16px;
+    margin-bottom: 18px;
+  }
+
+  .exercise-top h3 {
+    margin: 0;
+    font-size: 1.5rem;
+  }
+
+  .exercise-chip {
+    background: var(--mustard);
+    border: 3px solid var(--wood);
+    border-radius: 999px;
+    padding: 10px 16px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .previous-box {
+    background: rgba(233, 180, 76, 0.22);
+    border: 3px dashed var(--burnt-orange);
+    border-radius: 22px;
+    padding: 18px;
+    margin: 18px 0;
+    line-height: 1.6;
+  }
+
+  .set-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+    gap: 14px;
+    margin-top: 18px;
+  }
+
+  .set-grid input,
+  .exercise-card textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 14px;
+    border: 3px solid var(--wood);
+    border-radius: 18px;
+    background: white;
+    color: var(--wood);
+    font-weight: 800;
+  }
+
+  .exercise-card textarea {
+    margin-top: 14px;
+    min-height: 90px;
+  }
+
+  .save-wrap {
+    text-align: center;
+    margin-top: 30px;
+  }
+
+  .retro-save {
+    padding: 16px 32px;
+    border: 4px solid var(--wood);
+    border-radius: 999px;
+    background: var(--soft-white);
+    color: var(--wood);
+    font-size: 1rem;
+    font-weight: 900;
+    box-shadow: 10px 10px 0 var(--mustard);
+    cursor: pointer;
+  }
+
+  .retro-save:hover {
+    transform: translateY(-2px);
+  }
+
+  @media (max-width: 700px) {
+    .exercise-top,
+    .set-grid {
+      grid-template-columns: 1fr;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .lift-hero,
+    .workout-card-shell {
+      padding: 26px;
+    }
+  }
+</style>
+
+<div class="lift-page">
+  <div class="lift-hero">
+    <h2>{{ workout_name|title }}</h2>
+    <p>Choose your setup and log your workout numbers.</p>
+
+    <div class="gym-select-wrap">
+      <select id="gym-select">
+        <option value="">-- Choose gym setup --</option>
         {% for value, label in gym_options %}
-            <option value="{{ value }}">{{ label }}</option>
+          <option value="{{ value }}">{{ label }}</option>
         {% endfor %}
-    </select>
-</div>
+      </select>
+    </div>
+  </div>
 
-<div id="workout-display" style="display:none; margin-top: 30px;">
-    <h3 id="workout-title"></h3>
-    <p id="workout-description"></p>
+  <div id="workout-display" class="workout-card-shell hidden">
+    <h2 id="workout-title" class="workout-title"></h2>
+    <p id="workout-description" class="workout-desc"></p>
 
     <form id="workout-form" method="post">
-        {% csrf_token %}
-        <div id="exercise-container"></div>
-        <button type="submit" style="margin-top:20px;">Save Workout</button>
+      {% csrf_token %}
+      <div id="exercise-container"></div>
+
+      <div class="save-wrap">
+        <button type="submit" class="retro-save">Save Workout</button>
+      </div>
     </form>
+  </div>
 </div>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const gymSelect = document.getElementById("gym-select");
-    const workoutDisplay = document.getElementById("workout-display");
-    const workoutTitle = document.getElementById("workout-title");
-    const workoutDescription = document.getElementById("workout-description");
-    const exerciseContainer = document.getElementById("exercise-container");
-    const workoutForm = document.getElementById("workout-form");
+  const gymSelect = document.getElementById("gym-select");
+  const workoutDisplay = document.getElementById("workout-display");
+  const workoutTitle = document.getElementById("workout-title");
+  const workoutDescription = document.getElementById("workout-description");
+  const exerciseContainer = document.getElementById("exercise-container");
+  const workoutForm = document.getElementById("workout-form");
 
-    gymSelect.addEventListener("change", function () {
-        const gymType = this.value;
+  gymSelect.addEventListener("change", function () {
+    const gymType = this.value;
 
-        if (!gymType) {
-            workoutDisplay.style.display = "none";
-            exerciseContainer.innerHTML = "";
-            return;
-        }
+    if (!gymType) {
+      workoutDisplay.classList.add("hidden");
+      exerciseContainer.innerHTML = "";
+      return;
+    }
 
-        fetch(`/tracker/workout/{{ workout_name }}/${gymType}/data/`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error("Failed to load workout");
-                }
-                return response.json();
-            })
-            .then(data => {
-                workoutDisplay.style.display = "block";
-                workoutTitle.textContent = data.workout.name;
-                workoutDescription.textContent = data.workout.description;
-                workoutForm.action = `/tracker/workout/save/${data.workout.slug}/`;
+    fetch(`/tracker/workout/{{ workout_name }}/${gymType}/data/`)
+      .then(response => {
+        if (!response.ok) throw new Error("Failed to load workout");
+        return response.json();
+      })
+      .then(data => {
+        workoutDisplay.classList.remove("hidden");
+        workoutTitle.textContent = data.workout.name;
+        workoutDescription.textContent = data.workout.description;
+        workoutForm.action = `/tracker/workout/save/${data.workout.slug}/`;
 
-                exerciseContainer.innerHTML = "";
+        exerciseContainer.innerHTML = "";
 
-                data.exercises.forEach(exercise => {
-                    const prev = exercise.previous || {};
+        data.exercises.forEach(exercise => {
+          const prev = exercise.previous || {};
+          const card = document.createElement("div");
+          card.className = "exercise-card";
 
-                    const card = document.createElement("div");
-                    card.style.border = "1px solid #ccc";
-                    card.style.padding = "20px";
-                    card.style.marginBottom = "20px";
-                    card.style.borderRadius = "10px";
-                    card.style.backgroundColor = "#f8f8f8";
+          card.innerHTML = `
+            <div class="exercise-top">
+              <h3>${exercise.order}. ${exercise.name}</h3>
+              <div class="exercise-chip">${exercise.sets} sets × ${exercise.reps}</div>
+            </div>
 
-                    card.innerHTML = `
-                        <h4>${exercise.order}. ${exercise.name}</h4>
-                        <p><strong>Prescription:</strong> ${exercise.sets} sets of ${exercise.reps}</p>
-                        <p><strong>Rest:</strong> ${exercise.rest_seconds} sec</p>
-                        <p>${exercise.notes || ""}</p>
+            <p><strong>Rest:</strong> ${exercise.rest_seconds} sec</p>
+            <p>${exercise.notes || ""}</p>
 
-                        <div style="margin: 15px 0; padding: 10px; background: #eee; border-radius: 8px;">
-                            <strong>Previous workout:</strong><br>
-                            Set 1: ${prev.set_1_weight ?? "-"} x ${prev.set_1_reps ?? "-"}<br>
-                            Set 2: ${prev.set_2_weight ?? "-"} x ${prev.set_2_reps ?? "-"}<br>
-                            Set 3: ${prev.set_3_weight ?? "-"} x ${prev.set_3_reps ?? "-"}<br>
-                            Set 4: ${prev.set_4_weight ?? "-"} x ${prev.set_4_reps ?? "-"}
-                        </div>
+            <div class="previous-box">
+              <strong>Previous Workout</strong><br>
+              Set 1: ${prev.set_1_weight ?? "-"} × ${prev.set_1_reps ?? "-"}<br>
+              Set 2: ${prev.set_2_weight ?? "-"} × ${prev.set_2_reps ?? "-"}<br>
+              Set 3: ${prev.set_3_weight ?? "-"} × ${prev.set_3_reps ?? "-"}<br>
+              Set 4: ${prev.set_4_weight ?? "-"} × ${prev.set_4_reps ?? "-"}
+            </div>
 
-                        <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:10px;">
-                            <input type="number" step="0.5" name="exercise_${exercise.id}_set_1_weight" placeholder="Set 1 weight">
-                            <input type="number" name="exercise_${exercise.id}_set_1_reps" placeholder="Set 1 reps">
+            <div class="set-grid">
+              <input type="number" step="0.5" name="exercise_${exercise.id}_set_1_weight" placeholder="Set 1 weight">
+              <input type="number" name="exercise_${exercise.id}_set_1_reps" placeholder="Set 1 reps">
+              <input type="number" step="0.5" name="exercise_${exercise.id}_set_2_weight" placeholder="Set 2 weight">
+              <input type="number" name="exercise_${exercise.id}_set_2_reps" placeholder="Set 2 reps">
+              <input type="number" step="0.5" name="exercise_${exercise.id}_set_3_weight" placeholder="Set 3 weight">
+              <input type="number" name="exercise_${exercise.id}_set_3_reps" placeholder="Set 3 reps">
+              <input type="number" step="0.5" name="exercise_${exercise.id}_set_4_weight" placeholder="Set 4 weight">
+              <input type="number" name="exercise_${exercise.id}_set_4_reps" placeholder="Set 4 reps">
+            </div>
 
-                            <input type="number" step="0.5" name="exercise_${exercise.id}_set_2_weight" placeholder="Set 2 weight">
-                            <input type="number" name="exercise_${exercise.id}_set_2_reps" placeholder="Set 2 reps">
+            <textarea name="exercise_${exercise.id}_notes" placeholder="Workout notes"></textarea>
+          `;
 
-                            <input type="number" step="0.5" name="exercise_${exercise.id}_set_3_weight" placeholder="Set 3 weight">
-                            <input type="number" name="exercise_${exercise.id}_set_3_reps" placeholder="Set 3 reps">
-
-                            <input type="number" step="0.5" name="exercise_${exercise.id}_set_4_weight" placeholder="Set 4 weight">
-                            <input type="number" name="exercise_${exercise.id}_set_4_reps" placeholder="Set 4 reps">
-                        </div>
-
-                        <textarea
-                            name="exercise_${exercise.id}_notes"
-                            placeholder="Notes"
-                            style="width:100%; margin-top:10px;"
-                        ></textarea>
-                    `;
-
-                    exerciseContainer.appendChild(card);
-                });
-            })
-            .catch(error => {
-                console.error(error);
-                workoutDisplay.style.display = "block";
-                workoutTitle.textContent = "Error";
-                workoutDescription.textContent = "Could not load this workout.";
-                exerciseContainer.innerHTML = "";
-            });
-    });
+          exerciseContainer.appendChild(card);
+        });
+      });
+  });
 });
 </script>
 
