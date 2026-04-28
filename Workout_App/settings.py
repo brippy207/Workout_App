@@ -115,4 +115,5 @@ FATSECRET_CLIENT_ID = '13daffb8169041eb943bbaea4b9d7ee1'
 FATSECRET_CLIENT_SECRET = '603150da930c4e60a6b5b13a38082a0e'
 
 #Gemini API Key
+#need to hide it in the future since it was leaked...
 GEMINI_API_KEY = "KEY_DISABLED"
