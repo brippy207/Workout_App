@@ -8,6 +8,8 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from .models import FoodLog, UserGoal 
+import google.generativeai as genai
+import ast
 
 from .forms import SignUpForm
 from .models import (
@@ -335,6 +337,74 @@ def create_custom_workout(request):
         return redirect('custom_workout_detail', workout_id=workout.id)
 
     return render(request, 'tracker/custom_workout_builder.html')
+
+def analyze_food_image(request):
+    """
+    Analyzes an uploaded food image using Gemini 2.5 and returns 
+    macro estimates in a format compatible with the Manual Entry panel.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST requests allowed'}, status=405)
+
+    try:
+        # 1. Grab the image
+        image_file = request.FILES.get('image')
+        if not image_file:
+            return JsonResponse({'error': 'No image uploaded'}, status=400)
+
+        # 2. Configure Gemini
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+        # Using the 2.5 version you confirmed exists in your model list
+        model = genai.GenerativeModel('gemini-2.5-flash')
+
+        # 3. Define a strict prompt to minimize formatting errors
+        prompt = (
+            "Identify the food in this image. "
+            "Return ONLY a JSON object with double quotes. "
+            "Fields: 'food_name' (string), 'protein' (int), 'carbs' (int), 'fats' (int), 'calories' (int). "
+            "Do not include any conversational text or markdown."
+        )
+
+        # 4. Get response
+        response = model.generate_content([
+            prompt,
+            {'mime_type': image_file.content_type, 'data': image_file.read()}
+        ])
+
+        if not response.text:
+            return JsonResponse({'error': 'AI returned an empty response'}, status=500)
+
+        # 5. Clean the response text (Strip Markdown backticks if present)
+        raw_text = response.text.strip()
+        if "```" in raw_text:
+            # Extract content between backticks
+            raw_text = raw_text.split("```")[1]
+            if raw_text.startswith("json"):
+                raw_text = raw_text[4:]
+        
+        raw_text = raw_text.strip()
+
+        # 6. Parse the data (The "Double Guard" method)
+        try:
+            # Try standard JSON first (expects double quotes)
+            data = json.loads(raw_text)
+        except json.JSONDecodeError:
+            # Fallback to literal_eval (handles single quotes/Python dict format)
+            data = ast.literal_eval(raw_text)
+
+        # 7. Return to frontend (mapping keys to match your JS IDs)
+        return JsonResponse({
+            'food_name': data.get('food_name', 'Unknown Food'),
+            'protein': data.get('protein', 0),
+            'carbs': data.get('carbs', 0),
+            'fats': data.get('fats', 0),
+            'calories': data.get('calories', 0)
+        })
+
+    except Exception as e:
+        # Log the specific error to the terminal for debugging
+        print(f"--- ANALYZE ERROR --- \n{str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 @login_required

@@ -23,6 +23,7 @@ urlpatterns = [
     path('custom-lift/<int:workout_id>/', views.custom_workout_detail, name='custom_workout_detail'),
     path('custom-lift/<int:workout_id>/log/', views.log_custom_workout, name='log_custom_workout'),
     path('saved-workouts/', views.saved_workouts, name='saved_workouts'),
+    path('analyze-food-image/', views.analyze_food_image, name='analyze_food_image'),
 ]
 
 

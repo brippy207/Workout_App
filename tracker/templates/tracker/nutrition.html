@@ -545,6 +545,19 @@
                 <input type="text" id="food-search-input" placeholder="search a grocery item...">
                 <button onclick="searchFood()">search</button>
             </div>
+            <div class="ai-scanner-mini"
+                style="margin: 15px 0; padding: 10px; border: 1px dashed #666; border-radius: 5px;">
+                <p style="font-size: 0.8em; margin-bottom: 5px;">Or, use AI to estimate from a photo:</p>
+                <input type="file" id="ai-food-image" accept="image/*" onchange="previewAiImage(event)"
+                    style="display: none;">
+                <button onclick="document.getElementById('ai-food-image').click()" class="btn-retro"
+                    style="font-size: 0.8em;">📸 Upload Photo</button>
+
+                <img id="ai-preview" style="display:none; width: 100px; margin: 10px auto; border-radius: 4px;">
+                <button id="ai-analyze-btn" onclick="analyzeWithGemini()" class="btn-add"
+                    style="display:none; background: #28a745;">Analyze Photo</button>
+                <div id="ai-status-msg" style="font-size: 0.8em; margin-top: 5px;"></div>
+            </div>
             <div class="search-status" id="search-status"></div>
             <div id="search-results"></div>
             <div id="serving-slider-section">
@@ -594,11 +607,13 @@
     let selectedProduct = null;
     let currentP = 0; let currentC = 0; let currentF = 0;
 
-    {% for log in food_logs %}
-    currentP += parseFloat("{{ log.protein }}") || 0;
-    currentC += parseFloat("{{ log.carbs }}") || 0;
-    currentF += parseFloat("{{ log.fats }}") || 0;
-    {% endfor %}
+    const foodLogs = JSON.parse(document.getElementById('food-data').textContent);
+    
+    foodLogs.forEach(log => {
+        currentP += parseFloat(log.protein) || 0;
+        currentC += parseFloat(log.carbs) || 0;
+        currentF += parseFloat(log.fats) || 0;
+    });
 
     // 2. Database Helper
     async function saveToDB(name, p, c, f) {
@@ -751,6 +766,52 @@
         document.getElementById('auto-preview').innerHTML = `<strong>preview:</strong> ${p}g p | ${c}g c | ${f}g f | <strong>(${Math.round(grams)}g)</strong>`;
     }
 
+
+    function previewAiImage(event) {
+        const reader = new FileReader();
+        reader.onload = function () {
+            const output = document.getElementById('ai-preview');
+            output.src = reader.result;
+            output.style.display = 'block';
+            document.getElementById('ai-analyze-btn').style.display = 'inline-block';
+        };
+        reader.readAsDataURL(event.target.files[0]);
+    }
+
+    async function analyzeWithGemini() {
+        const fileInput = document.getElementById('ai-food-image');
+        const status = document.getElementById('ai-status-msg');
+        const formData = new FormData();
+        formData.append('image', fileInput.files[0]);
+
+        status.innerText = "Gemini is thinking...";
+
+        try {
+            const response = await fetch('/tracker/analyze-food-image/', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': getCookie('csrftoken') }
+            });
+            const data = await response.json();
+
+            // BRINGING DATA TO MANUAL SECTION
+            // We use your existing IDs: add-p, add-c, add-f, food-name
+            document.getElementById('add-p').value = data.protein;
+            document.getElementById('add-c').value = data.carbs;
+            document.getElementById('add-f').value = data.fats;
+            document.getElementById('food-name').value = data.food_name;
+
+            status.innerText = "Success! Data sent to Manual Entry.";
+
+            // Optional: Switch them over to the manual tab to see the result
+            toggleNutritionMode('manual');
+
+        } catch (error) {
+            status.innerText = "Error analyzing image.";
+            console.error(error);
+        }
+    }
+
     async function addAutoFood() {
         if (!selectedProduct) return;
         const qty = parseFloat(document.getElementById('whole-items-input').value) || 0;
@@ -766,6 +827,21 @@
         updateBars();
         pushLogUI(`${selectedProduct.description} (${Math.round(grams)}g)`, p, c, f);
         saveToDB(selectedProduct.description, p, c, f);
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
     }
 
     function pushLogUI(label, p, c, f) {
