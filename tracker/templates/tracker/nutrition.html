@@ -147,7 +147,9 @@
     }
 
     .retro-slider {
+        appearance: none;
         -webkit-appearance: none;
+
         width: 100%;
         height: 12px;
         background: var(--cream);
@@ -526,6 +528,7 @@
 
     <div class="settings-card">
         <h3>add food item</h3>
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
         <div class="mode-toggle">
             <button id="btn-manual" class="active" onclick="switchMode('manual')">manual (most accurate)</button>
             <button id="btn-auto" onclick="switchMode('auto')">automatic (most convenient)</button>
@@ -601,6 +604,8 @@
         </div>
     </div>
 </div>
+
+{{ food_logs|json_script:"food-data" }}
 
 <script>
     // 1. Global Memory & Initial Load
@@ -681,7 +686,7 @@
         const c = parseFloat(document.getElementById('add-c').value);
         const f = parseFloat(document.getElementById('add-f').value);
 
-        if (!nameVal || isNaN(s)) return alert("Fill all fields");
+        if (!nameVal || isNaN(s) || isNaN(p) || isNaN(c) || isNaN(f)) return alert("Fill all fields");
 
         const totalP = p * s; const totalC = c * s; const totalF = f * s;
         currentP += totalP; currentC += totalC; currentF += totalF;
@@ -804,7 +809,7 @@
             status.innerText = "Success! Data sent to Manual Entry.";
 
             // Optional: Switch them over to the manual tab to see the result
-            toggleNutritionMode('manual');
+            switchMode('manual');
 
         } catch (error) {
             status.innerText = "Error analyzing image.";
