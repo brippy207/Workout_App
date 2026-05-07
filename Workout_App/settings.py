@@ -1,6 +1,7 @@
 from pathlib import Path
 import mimetypes
 import os
+import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -115,5 +116,8 @@ FATSECRET_CLIENT_ID = '13daffb8169041eb943bbaea4b9d7ee1'
 FATSECRET_CLIENT_SECRET = '603150da930c4e60a6b5b13a38082a0e'
 
 #Gemini API Key
-#need to hide it in the future since it was leaked...
-GEMINI_API_KEY = "KEY_DISABLED"
+env = environ.Env()
+# Read the .env file
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+
+GEMINI_API_KEY = env('GEMINI_API_KEY')
