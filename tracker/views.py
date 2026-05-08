@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.db import DatabaseError
 from django.http import JsonResponse
+from django.db.models import Sum
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from .models import FoodLog, UserGoal 
@@ -83,31 +84,40 @@ def home(request):
 
 @login_required
 def nutrition(request):
-    # This finds the goal in the DB. If it's not there, it creates it.
-    goal, created = UserGoal.objects.get_or_create(user=request.user)
-    
-    # If the user is new, 'created' will be True and goals will be 0.
-    # Let's ensure they have real numbers if they are new:
-    if created:
-        goal.protein_goal = 150
-        goal.carb_goal = 250
-        goal.fat_goal = 70
-        goal.save()
+    goal, _ = UserGoal.objects.get_or_create(user=request.user)
 
-    return render(request, 'tracker/nutrition.html', {'goal': goal})
+    # 2. Get today's logs
+    today = timezone.now().date()
+    daily_logs = FoodLog.objects.filter(user=request.user, date=today)
 
-def nutrition_tracker(request):
-    # 1. Get the data
-    user_goal, created = UserGoal.objects.get_or_create(user=request.user)
-    logs = FoodLog.objects.filter(user=request.user).order_by('-id')
+    # 3. DEFINE 'totals' HERE (Must be before you use it!)
+    totals = daily_logs.aggregate(
+        total_p=Sum('protein'),
+        total_c=Sum('carbs'),
+        total_f=Sum('fats')
+    )
 
-    # 2. Put it in the box (context)
+    # 4. Extract values safely (handling None cases)
+    p = totals.get('total_p') or 0
+    c = totals.get('total_c') or 0
+    f = totals.get('total_f') or 0
+
+    # 5. Now do your math
+    consumed_cals = (p * 4) + (c * 4) + (f * 9)
+    goal_cals = (goal.protein_goal * 4) + (goal.carb_goal * 4) + (goal.fat_goal * 9)
+
+    # 6. Pass everything to the template
     context = {
-        'goal': user_goal,  # This MUST match the 'goal' in {{ goal.protein_goal }}
-        'food_logs': logs,
+        'goal': goal,
+        'consumed_p': int(p),
+        'consumed_c': int(c),
+        'consumed_f': int(f),
+        'consumed_cals': int(consumed_cals), # int() makes it look cleaner in HTML
+        'goal_cals': int(goal_cals),
+        'food_logs': daily_logs,  # keep this for the template loop
+        'food_logs_json': list(daily_logs.values('food_name', 'protein', 'carbs', 'fats')),
     }
 
-    # 3. Send the box to the template
     return render(request, 'tracker/nutrition.html', context)
 
 
@@ -356,23 +366,35 @@ def analyze_food_image(request):
         genai.configure(api_key=settings.GEMINI_API_KEY)
         # Using the 2.5 version you confirmed exists in your model list
         model = genai.GenerativeModel('gemini-2.5-flash')
+        
+        user_extra_context = request.POST.get('user_context', '')
 
         # 3. Define a strict prompt to minimize formatting errors
-        prompt = (
-            "Identify the food in this image. "
-            "Return ONLY a JSON object with double quotes. "
+        base_prompt = (
+            "Identify the food in this image. Give an estimate of how many grams of protein, carbs, and fat are on the WHOLE PLATE/BOWL."
+            "If you cannot identify any food in the image, return exactly: 'No food found'. Do not try to identify food that looks like it's not there."
+            "Otherwise, return ONLY a JSON object with double quotes. "
             "Fields: 'food_name' (string), 'protein' (int), 'carbs' (int), 'fats' (int), 'calories' (int). "
             "Do not include any conversational text or markdown."
         )
+        
+        # If the user provided context, append it to the prompt
+        if user_extra_context:
+            full_prompt = f"{base_prompt}\n\nUSER PROVIDED CONTEXT: {user_extra_context}"
+        else:
+            full_prompt = base_prompt
 
         # 4. Get response
         response = model.generate_content([
-            prompt,
+            full_prompt,
             {'mime_type': image_file.content_type, 'data': image_file.read()}
         ])
 
         if not response.text:
             return JsonResponse({'error': 'AI returned an empty response'}, status=500)
+        
+        if "No food found" in response.text:
+            return JsonResponse({'error': 'No food recognized. Please try a clearer photo!'}, status=400)
 
         # 5. Clean the response text (Strip Markdown backticks if present)
         raw_text = response.text.strip()
@@ -398,7 +420,8 @@ def analyze_food_image(request):
             'protein': data.get('protein', 0),
             'carbs': data.get('carbs', 0),
             'fats': data.get('fats', 0),
-            'calories': data.get('calories', 0)
+            'calories': data.get('calories', 0),
+            'serving_amount': 1
         })
 
     except Exception as e:
@@ -537,17 +560,16 @@ def log_weight(request):
 @login_required
 def stats(request):
     profile = Profile.objects.filter(user=request.user).first()
-    workouts = WorkoutLog.objects.filter(user=request.user).order_by('date')
+    workout_logs = WorkoutLog.objects.filter(user=request.user).order_by('date')
     weights = list(WeightEntry.objects.filter(user=request.user).order_by('date', 'id'))
 
     events = []
-    for workout in workouts:
+    for workout in workout_logs:
         summary_parts = []
         if workout.distance:
-            summary_parts.append(f"{workout.distance} mi")
+            summary_parts.append(str(workout.distance) + ' mi')
         if workout.duration:
-            summary_parts.append(f"{workout.duration} min")
-
+            summary_parts.append(str(workout.duration) + ' min')
         events.append({
             'title': workout.activity_name,
             'start': (workout.date or timezone.localdate()).isoformat(),
@@ -555,19 +577,82 @@ def stats(request):
             'extendedProps': {
                 'distance': workout.distance,
                 'duration': workout.duration,
-                'summary': " • ".join(summary_parts) if summary_parts else "No extra details"
+                'summary': ' • '.join(summary_parts) if summary_parts else 'No extra details'
             }
+        })
+
+    # Build workout details by date
+    workout_details_by_date = {}
+    for workout in workout_logs:
+        key = (workout.date or timezone.localdate()).isoformat()
+        if key not in workout_details_by_date:
+            workout_details_by_date[key] = []
+
+        # Query UserExercisePerformance instead
+        perf_logs = UserExercisePerformance.objects.filter(
+            user=request.user,
+            performed_on=workout.date
+        ).select_related('exercise', 'workout')
+
+        exercises = []
+        for log in perf_logs:
+            sets_data = []
+            if log.set_1_weight is not None and log.set_1_reps is not None:
+                sets_data.append(str(log.set_1_reps) + ' reps @ ' + str(log.set_1_weight) + ' lbs')
+            if log.set_2_weight is not None and log.set_2_reps is not None:
+                sets_data.append(str(log.set_2_reps) + ' reps @ ' + str(log.set_2_weight) + ' lbs')
+            if log.set_3_weight is not None and log.set_3_reps is not None:
+                sets_data.append(str(log.set_3_reps) + ' reps @ ' + str(log.set_3_weight) + ' lbs')
+            if log.set_4_weight is not None and log.set_4_reps is not None:
+                sets_data.append(str(log.set_4_reps) + ' reps @ ' + str(log.set_4_weight) + ' lbs')
+            exercises.append({
+                'name': log.exercise.name,
+                'sets': sets_data,
+                'notes': log.notes or '',
+            })
+
+        workout_details_by_date[key].append({
+            'name': workout.activity_name,
+            'distance': workout.distance,
+            'duration': workout.duration,
+            'exercises': exercises,
+        })
+
+    nutrition_events = []
+    daily_nutrition = FoodLog.objects.filter(user=request.user).values('date').annotate(
+        total_p=Sum('protein'),
+        total_c=Sum('carbs'),
+        total_f=Sum('fats')
+    ).order_by('date')
+    for day in daily_nutrition:
+        cals = int((day['total_p'] * 4) + (day['total_c'] * 4) + (day['total_f'] * 9))
+        nutrition_events.append({
+            'date': day['date'].isoformat(),
+            'cals': cals,
+            'protein': int(day['total_p']),
+            'carbs': int(day['total_c']),
+            'fats': int(day['total_f']),
+        })
+
+    food_logs_by_date = {}
+    for log in FoodLog.objects.filter(user=request.user):
+        key = log.date.isoformat()
+        if key not in food_logs_by_date:
+            food_logs_by_date[key] = []
+        food_logs_by_date[key].append({
+            'name': log.food_name,
+            'protein': log.protein,
+            'carbs': log.carbs,
+            'fats': log.fats,
         })
 
     labels = []
     values = []
-
     if weights:
         start_date = weights[0].date
         for entry in weights:
             if entry.weight is None or entry.weight <= 0:
                 continue
-
             labels.append((entry.date - start_date).days)
             values.append(float(entry.weight))
 
@@ -583,9 +668,11 @@ def stats(request):
         'events_json': events,
         'labels_json': labels,
         'values_json': values,
+        'nutrition_events_json': nutrition_events,
+        'food_logs_by_date_json': food_logs_by_date,
+        'workout_details_by_date_json': workout_details_by_date,
     }
     return render(request, 'tracker/stats.html', context)
-
 @login_required
 @require_POST
 def log_food(request):
@@ -604,16 +691,46 @@ def log_food(request):
         messages.error(request, error_message)
         return redirect('nutrition')
 
+    # 1. Create the new entry
+    # Note: Ensure your model uses 'date' as the field name as per your previous error
     FoodLog.objects.create(
         user=request.user,
         food_name=food_name,
         protein=protein,
         carbs=carbs,
         fats=fats,
+        date=timezone.now().date() 
     )
+
+    # 2. Calculate the NEW totals for today
+    today = timezone.now().date()
+    totals = FoodLog.objects.filter(user=request.user, date=today).aggregate(
+        total_p=Sum('protein'),
+        total_c=Sum('carbs'),
+        total_f=Sum('fats')
+    )
+
+    # 3. Clean the data (convert None to 0)
+    p = totals.get('total_p') or 0
+    c = totals.get('total_c') or 0
+    f = totals.get('total_f') or 0
+    
+    # 4. Calculate total calories based on the NEW totals
+    new_calories = (p * 4) + (c * 4) + (f * 9)
+
     success_message = f"{food_name} added to your food log."
+    
     if is_ajax:
-        return JsonResponse({'ok': True, 'message': success_message})
+        # Return the new totals so JS doesn't have to guess
+        return JsonResponse({
+            'ok': True, 
+            'message': success_message,
+            'new_total_p': p,
+            'new_total_c': c,
+            'new_total_f': f,
+            'new_calories': int(new_calories)
+        })
+
     messages.success(request, success_message)
     return redirect('nutrition')
 
@@ -624,7 +741,7 @@ def update_goals(request):
         goal, _ = UserGoal.objects.get_or_create(user=request.user)
         
         # 1. Get the specific goal for THIS user
-        goal, created = UserGoal.objects.get_or_create(user=request.user)
+        goal, _ = UserGoal.objects.get_or_create(user=request.user)
         
         # 2. Assign the new values from the JS 'body'
         goal.protein_goal = int(data.get('protein'))

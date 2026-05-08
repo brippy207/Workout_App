@@ -2,6 +2,8 @@
 {% load static %}
 
 {% block extra_css %}
+
+
 <link rel="stylesheet" href="{% static 'tracker/css/grid_layout.css' %}">
 <style>
     .container {
@@ -459,7 +461,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <h4 style="margin:0;">daily targets</h4>
             <div class="drawer-target-text">
-                total: <span id="goal-cal-display" style="color: var(--burnt-orange);">0</span> kcal
+                total: <span id="goal-cal-display" style="color: var(--burnt-orange);">{{ goal_cals }}</span> kcal
             </div>
         </div>
 
@@ -495,7 +497,9 @@
         <div class="progress-container">
             <div class="progress-label">
                 <span style="color: var(--burnt-orange); font-weight: 900; font-size: 1.2rem;">total calories</span>
-                <span id="cal-text">0 / 2000 kcal</span>
+                <span id="cal-text">
+                    <span id="cal-consumed">{{ consumed_cals }}</span> / {{ goal_cals }} kcal
+                </span>
             </div>
             <div class="progress-bg" style="height: 40px; border-width: 4px; display: flex;">
                 <div id="cal-bar-p" class="progress-fill" style="background: var(--burnt-orange); width: 0%;"></div>
@@ -505,21 +509,36 @@
         </div>
 
         <div class="progress-container">
-            <div class="progress-label"><span>protein</span> <span id="p-text">0 / 150g</span></div>
+            <div class="progress-label">
+                <span>protein</span>
+                <span id="p-text">
+                    <span id="p-consumed">{{ consumed_p }}</span>/{{ goal.protein_goal }}g
+                </span>
+            </div>
             <div class="progress-bg">
                 <div id="p-bar" class="progress-fill" style="background: var(--burnt-orange);"></div>
             </div>
         </div>
 
         <div class="progress-container">
-            <div class="progress-label"><span>carbs</span> <span id="c-text">0 / 200g</span></div>
+            <div class="progress-label">
+                <span>carbohydrates</span>
+                <span id="c-text">
+                    <span id="c-consumed">{{ consumed_c }}</span>/{{ goal.carb_goal }}g
+                </span>
+            </div>
             <div class="progress-bg">
                 <div id="c-bar" class="progress-fill" style="background: var(--mustard);"></div>
             </div>
         </div>
 
         <div class="progress-container">
-            <div class="progress-label"><span>fats</span> <span id="f-text">0 / 70g</span></div>
+            <div class="progress-label">
+                <span>fats</span>
+                <span id="f-text">
+                    <span id="f-consumed">{{ consumed_f }}</span>/{{ goal.fat_goal }}g
+                </span>
+            </div>
             <div class="progress-bg">
                 <div id="f-bar" class="progress-fill" style="background: #8b5e3c;"></div>
             </div>
@@ -536,9 +555,9 @@
         <div id="manual-panel">
             <div class="input-row">
                 <input type="number" id="add-s" placeholder="servings" style="flex: 1;">
-                <input type="number" id="add-p" placeholder="p (g)" style="flex: 1;">
-                <input type="number" id="add-c" placeholder="c (g)" style="flex: 1;">
-                <input type="number" id="add-f" placeholder="f (g)" style="flex: 1;">
+                <input type="number" id="add-p" placeholder="protein per serving (g)" style="flex: 1;">
+                <input type="number" id="add-c" placeholder="carbs per serving (g)" style="flex: 1;">
+                <input type="number" id="add-f" placeholder="fat per serving (g)" style="flex: 1;">
                 <input type="text" id="food-name" placeholder="food name" style="flex: 1;">
                 <button class="btn-add" onclick="addFood()">add to log</button>
             </div>
@@ -555,6 +574,12 @@
                     style="display: none;">
                 <button onclick="document.getElementById('ai-food-image').click()" class="btn-retro"
                     style="font-size: 0.8em;">📸 Upload Photo</button>
+
+                <div class="mt-3">
+                    <label for="user_context" class="form-label">Additional Details (Optional):</label>
+                    <textarea id="user_context" class="form-control"
+                        placeholder="e.g. 'This is sugar-free syrup' or 'Extra large portion'"></textarea>
+                </div>
 
                 <img id="ai-preview" style="display:none; width: 100px; margin: 10px auto; border-radius: 4px;">
                 <button id="ai-analyze-btn" onclick="analyzeWithGemini()" class="btn-add"
@@ -605,20 +630,22 @@
     </div>
 </div>
 
-{{ food_logs|json_script:"food-data" }}
+{{ food_logs_json|json_script:"food-data" }}
 
 <script>
+
+    console.log("Nutrition Script Loaded!");
+
+    window.currentP = Number("{{ consumed_p|default:0 }}");
+    window.currentC = Number("{{ consumed_c|default:0 }}");
+    window.currentF = Number("{{ consumed_f|default:0 }}");
+
+    updateBars();
+
     // 1. Global Memory & Initial Load
     let selectedProduct = null;
-    let currentP = 0; let currentC = 0; let currentF = 0;
 
     const foodLogs = JSON.parse(document.getElementById('food-data').textContent);
-    
-    foodLogs.forEach(log => {
-        currentP += parseFloat(log.protein) || 0;
-        currentC += parseFloat(log.carbs) || 0;
-        currentF += parseFloat(log.fats) || 0;
-    });
 
     // 2. Database Helper
     async function saveToDB(name, p, c, f) {
@@ -630,52 +657,81 @@
         formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
 
         try {
-            await fetch("{% url 'log_food' %}", {
+            const response = await fetch("{% url 'log_food' %}", {
                 method: "POST",
                 body: formData,
                 headers: { "X-Requested-With": "XMLHttpRequest" }
             });
+
+            const result = await response.json();
+
+            if (result.ok) {
+                // 1. UPDATE THE GLOBAL SOURCE OF TRUTH
+                // Make sure these match the keys in your Django JsonResponse!
+                window.currentP = Number(result.new_total_p);
+                window.currentC = Number(result.new_total_c);
+                window.currentF = Number(result.new_total_f);
+
+                // 2. DEBUG: Check the console to see if these numbers are real
+                console.log("Global vars updated to:", window.currentP, window.currentC, window.currentF);
+
+                // 3. TRIGGER THE UI REDRAW
+                updateBars();
+            }
         } catch (e) { console.error("Save failed", e); }
     }
 
     // 3. UI Sync (Bars & Mode Toggle)
     function updateBars() {
-        const gP = parseInt(document.getElementById('goal-p').value);
-        const gC = parseInt(document.getElementById('goal-c').value);
-        const gF = parseInt(document.getElementById('goal-f').value);
+        console.log("updateBars logic triggered");
+
+        // 1. Safely grab Goal values
+        const gP = parseInt(document.getElementById('goal-p')?.value) || 0;
+        const gC = parseInt(document.getElementById('goal-c')?.value) || 0;
+        const gF = parseInt(document.getElementById('goal-f')?.value) || 0;
+
+        // 2. Safely grab Global Consumed values
+        // Using window.currentP (set by the Django tag at the top)
+        const cP = window.currentP || 0;
+        const cC = window.currentC || 0;
+        const cF = window.currentF || 0;
+
+        console.log(`Current: ${cP}/${gP}, ${cC}/${gC}, ${cF}/${gF}`);
 
         const totalGoalCal = (gP * 4) + (gC * 4) + (gF * 9);
+        const currentCal = (cP * 4) + (cC * 4) + (cF * 9);
 
-        // Calculate current calories from each macro
-        const calFromP = currentP * 4;
-        const calFromC = currentC * 4;
-        const calFromF = currentF * 9;
-        const currentCal = calFromP + calFromC + calFromF;
+        // 3. Update Text Labels (with safety checks)
+        const updateText = (id, text) => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = text;
+        };
 
-        // Update Text Readouts
-        document.getElementById('val-p').innerText = gP;
-        document.getElementById('val-c').innerText = gC;
-        document.getElementById('val-f').innerText = gF;
-        document.getElementById('goal-cal-display').innerText = totalGoalCal;
+        updateText('val-p', gP);
+        updateText('val-c', gC);
+        updateText('val-f', gF);
+        updateText('p-text', `${Math.round(cP)} / ${gP}g`);
+        updateText('c-text', `${Math.round(cC)} / ${gC}g`);
+        updateText('f-text', `${Math.round(cF)} / ${gF}g`);
+        updateText('cal-text', `${Math.round(currentCal)} / ${totalGoalCal} kcal`);
+        updateText('goal-cal-display', totalGoalCal);
 
-        document.getElementById('cal-text').innerText = `${Math.round(currentCal)} / ${totalGoalCal} kcal`;
-        document.getElementById('p-text').innerText = `${Math.round(currentP)} / ${gP}g`;
-        document.getElementById('c-text').innerText = `${Math.round(currentC)} / ${gC}g`;
-        document.getElementById('f-text').innerText = `${Math.round(currentF)} / ${gF}g`;
+        // 4. Update Bar Widths (with safety checks)
+        const updateWidth = (id, percent) => {
+            const el = document.getElementById(id);
+            if (el) el.style.width = percent + '%';
+        };
 
-        // --- SEGMENTED CALORIE BAR LOGIC ---
-        const getPct = (val) => (totalGoalCal > 0) ? (val / totalGoalCal) * 100 : 0;
-
-        // We calculate percentages relative to the total TARGET calories
-        document.getElementById('cal-bar-p').style.width = getPct(calFromP) + '%';
-        document.getElementById('cal-bar-c').style.width = getPct(calFromC) + '%';
-        document.getElementById('cal-bar-f').style.width = getPct(calFromF) + '%';
-
-        // Individual Macro Bars (remain as they were)
         const getW = (curr, goal) => (goal > 0) ? Math.min((curr / goal) * 100, 100) : 0;
-        document.getElementById('p-bar').style.width = getW(currentP, gP) + '%';
-        document.getElementById('c-bar').style.width = getW(currentC, gC) + '%';
-        document.getElementById('f-bar').style.width = getW(currentF, gF) + '%';
+        updateWidth('p-bar', getW(cP, gP));
+        updateWidth('c-bar', getW(cC, gC));
+        updateWidth('f-bar', getW(cF, gF));
+
+        // Calorie Segments
+        const getPct = (val) => (totalGoalCal > 0) ? (val / totalGoalCal) * 100 : 0;
+        updateWidth('cal-bar-p', getPct(cP * 4));
+        updateWidth('cal-bar-c', getPct(cC * 4));
+        updateWidth('cal-bar-f', getPct(cF * 9));
     }
 
     // 4. Manual Logic
@@ -688,15 +744,56 @@
 
         if (!nameVal || isNaN(s) || isNaN(p) || isNaN(c) || isNaN(f)) return alert("Fill all fields");
 
-        const totalP = p * s; const totalC = c * s; const totalF = f * s;
-        currentP += totalP; currentC += totalC; currentF += totalF;
+        const totalP = p * s;
+        const totalC = c * s;
+        const totalF = f * s;
 
-        updateBars();
-        pushLogUI(`${nameVal.toLowerCase()} (${s} servings)`, totalP, totalC, totalF);
-        saveToDB(nameVal, totalP, totalC, totalF);
+        // 1. Update the list immediately so the user sees their entry
+        const label = `${nameVal.toLowerCase()} (${s} serving${s !== 1 ? 's' : ''})`;
+        pushLogUI(label, totalP, totalC, totalF);
 
-        ['food-name', 'add-s', 'add-p', 'add-c', 'add-f'].forEach(id => document.getElementById(id).value = '');
+        // 2. Send to Database. 
+        // The saveToDB function we wrote will update the bars/text 
+        // using the official totals from the server.
+        saveToDB(nameVal, Number(totalP), Number(totalC), Number(totalF));
+
+        // 3. Clear the inputs
+        ['food-name', 'add-s', 'add-p', 'add-c', 'add-f'].forEach(id => {
+            document.getElementById(id).value = (id === 'add-s') ? '1' : '';
+        });
+
+
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //todo: fix text thing, make sure bars are working again, calories per day shit to stat page, QoL improvements
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     // 5. Search Logic (Using your Local API)
     async function searchFood() {
@@ -785,11 +882,13 @@
 
     async function analyzeWithGemini() {
         const fileInput = document.getElementById('ai-food-image');
+        const contextInput = document.getElementById('user_context');
         const status = document.getElementById('ai-status-msg');
         const formData = new FormData();
         formData.append('image', fileInput.files[0]);
+        formData.append('user_context', contextInput.value);
 
-        status.innerText = "Gemini is thinking...";
+        status.innerText = "Thinking...";
 
         try {
             const response = await fetch('/tracker/analyze-food-image/', {
@@ -805,6 +904,7 @@
             document.getElementById('add-c').value = data.carbs;
             document.getElementById('add-f').value = data.fats;
             document.getElementById('food-name').value = data.food_name;
+            document.getElementById('add-s').value = data.serving_amount;
 
             status.innerText = "Success! Data sent to Manual Entry.";
 
@@ -937,9 +1037,6 @@
         // 1. Switch UI back to manual mode so they can see the numbers
         switchMode('manual');
 
-        // 2. Set the name
-        document.getElementById('food-name').value = food.food_name;
-        document.getElementById('add-s').value = 1; // Default to 1 serving
 
         // 3. Extract numbers from the description string using Regex
         const desc = food.food_description;
@@ -948,6 +1045,15 @@
         const pMatch = desc.match(/Protein: ([\d.]+)g/);
         const cMatch = desc.match(/Carbs: ([\d.]+)g/);
         const fMatch = desc.match(/Fat: ([\d.]+)g/);
+        const sMatch = desc.match(/Per\s+(.*?)\s+-/);
+        const result = sMatch ? desc.split(sMatch[0])[1].replace(',', '').trim() : desc;
+
+        const servingPart = sMatch ? sMatch[1].trim() : "";
+        const finalName = (servingPart + " " + food.food_name).trim().toLowerCase();
+
+        // 2. Set the name
+        document.getElementById('food-name').value = finalName
+        document.getElementById('add-s').value = 1; // Default to 1 serving
 
         // 4. Fill the manual input fields
         document.getElementById('add-p').value = pMatch ? pMatch[1] : 0;
@@ -961,12 +1067,13 @@
         // Optional: focus the serving box so they can adjust it
         document.getElementById('add-s').focus();
     }
+    console.log("DOM fully loaded - calling updateBars now.");
 
     // Event Listeners
     document.getElementById('whole-items-input').addEventListener('input', () => {
         document.getElementById('serving-pct-slider').value = 100;
         updateAutoPreview();
     });
-    window.onload = updateBars;
+
 </script>
 {% endblock %}

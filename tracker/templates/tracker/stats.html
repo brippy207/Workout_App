@@ -1,12 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
-
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 {{ events_json|json_script:"stats-events-data" }}
 {{ labels_json|json_script:"stats-labels-data" }}
 {{ values_json|json_script:"stats-values-data" }}
+{{ nutrition_events_json|json_script:"nutrition-events-data" }}
+{{ food_logs_by_date_json|json_script:"food-logs-by-date-data" }}
+{{ workout_details_by_date_json|json_script:"workout-details-data" }}
 
 <style>
   .stats-shell {
@@ -199,14 +200,65 @@
     </form>
 
     <div class="stats-tabs">
-      <button id="calendar-tab" onclick="openTab('calendar-view', this)" class="pill-button" type="button">Calendar</button>
-      <button id="graph-tab" onclick="openTab('graph-view', this)" class="pill-button" type="button">Weight Progress</button>
+      <button id="calendar-tab" onclick="openTab('calendar-view', this)" class="pill-button"
+        type="button">calendars</button>
+      <button id="graph-tab" onclick="openTab('graph-view', this)" class="pill-button" type="button">weight
+        progress</button>
     </div>
 
     <div id="calendar-view" class="tab-content">
-      <h3 style="text-align: center; margin-bottom: 15px;">Activity Log</h3>
-      <div class="stats-card">
-        <div id="calendar"></div>
+      <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
+        <button class="pill-button" id="btn-activity" onclick="switchCalendar('activity')">activity log</button>
+        <button class="pill-button" id="btn-eats" onclick="switchCalendar('eats')">daily eats</button>
+      </div>
+
+      <div id="calendar-activity">
+        <h3 style="text-align: center; margin-bottom: 15px;">Activity Log</h3>
+        <div class="stats-card">
+          <div id="calendar"></div>
+        </div>
+      </div>
+
+      <div id="calendar-eats" style="display:none;">
+        <h3 style="text-align: center; margin-bottom: 15px;">Daily Eats</h3>
+        <div class="stats-card">
+          <div id="calendar-food"></div>
+        </div>
+      </div>
+
+      <div id="activity-day-modal" style="display:none; position:fixed; top:50%; left:50%;
+    transform:translate(-50%,-50%); background:var(--cream); border:2px solid var(--wood);
+    border-radius:16px; padding:20px; z-index:9999; width:90%; max-width:400px;
+    max-height:70vh; overflow-y:auto;
+    box-shadow: 8px 8px 0 var(--mustard);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <h4 id="activity-modal-date" style="margin:0;"></h4>
+          <button
+            onclick="document.getElementById('activity-day-modal').style.display='none'; document.getElementById('modal-overlay').style.display='none';"
+            class="pill-button" style="padding:6px 14px; box-shadow:none;">✕</button>
+        </div>
+        <div id="activity-modal-content"></div>
+      </div>
+
+      <!-- Popup modal for day click -->
+      <div id="food-day-modal" style="display:none; position:fixed; top:50%; left:50%;
+    transform:translate(-50%,-50%); background:var(--cream); border:2px solid var(--wood);
+    border-radius:16px; padding:20px; z-index:9999; width:90%; max-width:400px;
+    max-height:70vh; overflow-y:auto;
+    box-shadow: 8px 8px 0 var(--mustard);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <h4 id="modal-date" style="margin:0;"></h4>
+          <button
+            onclick="document.getElementById('food-day-modal').style.display='none'; document.getElementById('modal-overlay').style.display='none';"
+            class="pill-button" style="padding:6px 14px; box-shadow:none;">✕</button>
+        </div>
+        <div id="modal-food-list"></div>
+      </div>
+
+      <!-- dark overlay behind modal -->
+      <div id="modal-overlay" onclick="document.getElementById('food-day-modal').style.display='none';
+    document.getElementById('modal-overlay').style.display='none';" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.4); z-index:9998;">
       </div>
     </div>
 
@@ -227,9 +279,7 @@
     for (let i = 0; i < contents.length; i++) {
       contents[i].style.display = 'none';
     }
-
     document.getElementById(tabId).style.display = 'block';
-
     const buttons = document.querySelectorAll('.stats-tabs button');
     buttons.forEach(btn => {
       btn.style.opacity = '0.78';
@@ -237,14 +287,12 @@
       btn.style.background = 'var(--soft-white)';
       btn.style.color = 'var(--wood)';
     });
-
     if (buttonEl) {
       buttonEl.style.opacity = '1';
       buttonEl.style.background = 'var(--burnt-orange)';
       buttonEl.style.color = 'var(--soft-white)';
       buttonEl.style.borderColor = 'var(--burnt-orange)';
     }
-
     window.dispatchEvent(new Event('resize'));
   }
 
@@ -252,37 +300,190 @@
     document.getElementById('weight-form').classList.toggle('active');
   }
 
+  function switchCalendar(mode) {
+    document.getElementById('calendar-activity').style.display = mode === 'activity' ? 'block' : 'none';
+    document.getElementById('calendar-eats').style.display = mode === 'eats' ? 'block' : 'none';
+
+    if (mode === 'eats') {
+      foodCalendar.updateSize();
+    }
+
+    // highlight the active button
+    const btnActivity = document.getElementById('btn-activity');
+    const btnEats = document.getElementById('btn-eats');
+
+    if (mode === 'activity') {
+      btnActivity.style.background = 'var(--burnt-orange)';
+      btnActivity.style.color = 'var(--soft-white)';
+      btnActivity.style.borderColor = 'var(--burnt-orange)';
+      btnEats.style.background = 'var(--soft-white)';
+      btnEats.style.color = 'var(--wood)';
+      btnEats.style.borderColor = 'var(--wood)';
+    } else {
+      btnEats.style.background = 'var(--burnt-orange)';
+      btnEats.style.color = 'var(--soft-white)';
+      btnEats.style.borderColor = 'var(--burnt-orange)';
+      btnActivity.style.background = 'var(--soft-white)';
+      btnActivity.style.color = 'var(--wood)';
+      btnActivity.style.borderColor = 'var(--wood)';
+    }
+  }
+
+  let foodCalendar; // declare up here
+  let foodLogsByDate;
+
   document.addEventListener('DOMContentLoaded', function () {
     const eventsData = JSON.parse(document.getElementById('stats-events-data').textContent);
     const labelsData = JSON.parse(document.getElementById('stats-labels-data').textContent);
     const valuesData = JSON.parse(document.getElementById('stats-values-data').textContent);
+    const nutritionEventsData = JSON.parse(document.getElementById('nutrition-events-data').textContent);
+    const workoutDetailsByDate = JSON.parse(document.getElementById('workout-details-data').textContent);
+    foodLogsByDate = JSON.parse(document.getElementById('food-logs-by-date-data').textContent);
 
     const calendarTab = document.getElementById('calendar-tab');
     openTab('calendar-view', calendarTab);
+    switchCalendar('activity');
 
+    // Activity Calendar
     const calendarEl = document.getElementById('calendar');
     if (calendarEl) {
       const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
+        selactable: true,
         events: eventsData,
         height: 'auto',
         dayMaxEventRows: 3,
         eventDisplay: 'block',
-        eventContent: function(arg) {
+        eventContent: function (arg) {
           const title = document.createElement('div');
           title.className = 'event-title';
           title.textContent = arg.event.title;
-
           const meta = document.createElement('div');
           meta.className = 'event-meta';
           meta.textContent = arg.event.extendedProps.summary || '';
-
           return { domNodes: [title, meta] };
+        },
+        eventClick: function (info) {
+          const clickedDate = info.event.startStr;
+          const dayWorkouts = workoutDetailsByDate[clickedDate] || [];
+
+          document.getElementById('activity-modal-date').textContent = clickedDate;
+
+          let html = '';
+          for (let i = 0; i < dayWorkouts.length; i++) {
+            const w = dayWorkouts[i];
+            html += '<div style="border-bottom: 1px dashed var(--wood); padding: 8px 0;">';
+            html += '<strong>' + w.name + '</strong><br>';
+            if (w.duration) {
+              html += '<span style="font-size:0.82rem;">Duration: ' + w.duration + ' min</span><br>';
+            }
+            if (w.distance) {
+              html += '<span style="font-size:0.82rem;">Distance: ' + w.distance + ' mi</span><br>';
+            }
+            if (w.exercises.length > 0) {
+              html += '<div style="margin-top:6px;">';
+              for (let j = 0; j < w.exercises.length; j++) {
+                const ex = w.exercises[j];
+                html += '<div style="font-size:0.82rem; padding: 4px 0; border-bottom: 1px dashed rgba(77,45,24,0.2);">';
+                html += '<strong>' + ex.name + '</strong><br>';
+                for (let k = 0; k < ex.sets.length; k++) {
+                  html += 'Set ' + (k + 1) + ': ' + ex.sets[k] + '<br>';
+                }
+                if (ex.notes) {
+                  html += '<em style="font-size:0.78rem;">' + ex.notes + '</em>';
+                }
+                html += '</div>';
+              }
+              html += '</div>';
+            }
+            html += '</div>';
+          }
+
+          if (html === '') {
+            html = '<p>No details available.</p>';
+          }
+
+          document.getElementById('activity-modal-content').innerHTML = html;
+          document.getElementById('activity-day-modal').style.display = 'block';
+          document.getElementById('modal-overlay').style.display = 'block';
         }
       });
       calendar.render();
     }
 
+    // Food Calendar
+    const foodCalendarEl = document.getElementById('calendar-food');
+    if (foodCalendarEl) {
+      foodCalendar = new FullCalendar.Calendar(foodCalendarEl, {
+        initialView: 'dayGridMonth',
+        height: 'auto',
+        dayMaxEventRows: 3,
+        eventDisplay: 'block',
+        events: nutritionEventsData.map(function (day) {
+          return {
+            title: day.cals + ' kcal',
+            start: day.date,
+            color: '#e9b44c',
+            extendedProps: {
+              summary: day.protein + 'g protein'
+            }
+          };
+        }),
+        eventContent: function (arg) {
+          const title = document.createElement('div');
+          title.className = 'event-title';
+          title.textContent = arg.event.title;
+          const meta = document.createElement('div');
+          meta.className = 'event-meta';
+          meta.textContent = arg.event.extendedProps.summary || '';
+          return { domNodes: [title, meta] };
+        },
+        dateClick: function (info) {
+          const clickedDate = info.dateStr;
+          const dayLogs = foodLogsByDate[clickedDate] || [];
+          document.getElementById('modal-date').textContent = clickedDate;
+          document.getElementById('food-day-modal').style.display = 'block';
+          document.getElementById('modal-overlay').style.display = 'block';
+          if (dayLogs.length === 0) {
+            document.getElementById('modal-food-list').innerHTML = '<p>nothing logged this day.</p>';
+          } else {
+            let html = '';
+            for (let i = 0; i < dayLogs.length; i++) {
+              const item = dayLogs[i];
+              html += '<div style="border-bottom: 1px dashed var(--wood); padding: 6px 0;">';
+              html += '<strong>' + item.name + '</strong><br>';
+              html += '<span style="font-size:0.82rem;">P: ' + item.protein + 'g | C: ' + item.carbs + 'g | F: ' + item.fats + 'g</span>';
+              html += '</div>';
+            }
+            document.getElementById('modal-food-list').innerHTML = html;
+          }
+        },
+        eventClick: function (info) {
+          const clickedDate = info.event.startStr;
+          const dayLogs = foodLogsByDate[clickedDate] || [];
+          document.getElementById('modal-date').textContent = clickedDate;
+          document.getElementById('food-day-modal').style.display = 'block';
+          document.getElementById('modal-overlay').style.display = 'block';
+          if (dayLogs.length === 0) {
+            document.getElementById('modal-food-list').innerHTML = '<p>nothing logged this day.</p>';
+          } else {
+            let html = '';
+            for (let i = 0; i < dayLogs.length; i++) {
+              const item = dayLogs[i];
+              html += '<div style="border-bottom: 1px dashed var(--wood); padding: 6px 0;">';
+              html += '<strong>' + item.name + '</strong><br>';
+              html += '<span style="font-size:0.82rem;">P: ' + item.protein + 'g | C: ' + item.carbs + 'g | F: ' + item.fats + 'g</span>';
+              html += '</div>';
+            }
+            document.getElementById('modal-food-list').innerHTML = html;
+          }
+        }
+      });
+      foodCalendar.render();
+    }
+
+
+    // Weight Chart
     const chartCanvas = document.getElementById('weightChart');
     if (chartCanvas) {
       new Chart(chartCanvas.getContext('2d'), {
@@ -309,10 +510,7 @@
             legend: {
               labels: {
                 color: '#4d2d18',
-                font: {
-                  size: 14,
-                  weight: '600'
-                }
+                font: { size: 14, weight: '600' }
               }
             }
           },
@@ -322,34 +520,20 @@
                 display: true,
                 text: 'Days',
                 color: '#4d2d18',
-                font: {
-                  size: 14,
-                  weight: '700'
-                }
+                font: { size: 14, weight: '700' }
               },
-              ticks: {
-                color: '#4d2d18'
-              },
-              grid: {
-                color: 'rgba(77, 45, 24, 0.08)'
-              }
+              ticks: { color: '#4d2d18' },
+              grid: { color: 'rgba(77, 45, 24, 0.08)' }
             },
             y: {
               title: {
                 display: true,
                 text: 'Weight (lbs)',
                 color: '#4d2d18',
-                font: {
-                  size: 14,
-                  weight: '700'
-                }
+                font: { size: 14, weight: '700' }
               },
-              ticks: {
-                color: '#4d2d18'
-              },
-              grid: {
-                color: 'rgba(77, 45, 24, 0.08)'
-              }
+              ticks: { color: '#4d2d18' },
+              grid: { color: 'rgba(77, 45, 24, 0.08)' }
             }
           }
         }
@@ -357,5 +541,4 @@
     }
   });
 </script>
-
 {% endblock %}
